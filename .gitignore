@@ -1,0 +1,12 @@
+legal
+test
+*.c
+rulesheets
+games
+__pycache__
+.*.swp
+.*.swo
+*.html
+venv
+.vscode
+models
