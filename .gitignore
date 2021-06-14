@@ -1,8 +1,6 @@
 legal
 test
 *.c
-rulesheets
-games
 __pycache__
 .*.swp
 .*.swo
