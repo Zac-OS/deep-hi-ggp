@@ -5,6 +5,6 @@ __pycache__
 .*.swp
 .*.swo
 *.html
-venv
+env
 .vscode
 models

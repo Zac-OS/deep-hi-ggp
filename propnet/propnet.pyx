@@ -45,11 +45,16 @@ def load_propnet(base):
 def convert_to_propnet(filename):
     filename = os.path.abspath(filename)
     base = os.path.basename(filename).replace('.kif', '').replace('.gdl', '')
+    start_path = os.getcwd()
     out_fn = os.path.join('games', base+'.py')
     out_fn = os.path.abspath(out_fn)
-    os.chdir('/home/adrian/ggplib/ggp-base/bin/')
-    os.system('java -cp . -XX:+UseSerialGC -Xmx8G propnet_convert.Convert %s %s' % (filename, out_fn))
-    return load_propnet(base)
+    os.chdir('/Users/zac/work/comp/thesis/ggp-base')
+    os.system(f'/usr/bin/env /Library/Java/JavaVirtualMachines/adoptopenjdk-11.jdk/Contents/Home/bin/java -Dfile.encoding=UTF-8 @/var/folders/dn/fgnx1mcx071958qc2p9nxkwr0000gn/T/cp_5xvvd7vwrtijdndq373ee21b1.argfile propnet_convert.Convert {filename} {out_fn}')
+    with open(out_fn) as f:
+        propnet_code = f.read().split("\n")
+        propnet_code[3] = "from constants import *"
+    with open(out_fn, "w") as f:
+        f.write("\n".join(propnet_code))
 
 
 cdef class Propnet:

@@ -1,4 +1,4 @@
-from propnet import propnet
+import propnet
 import sys
 
 fn = sys.argv[1]
