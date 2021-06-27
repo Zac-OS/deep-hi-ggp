@@ -1,7 +1,7 @@
 # cython: profile=True
 from node import node_types, transition_split, Node
 from constants import (AND, OR, PROPOSITION, TRANSITION, NOT, CONSTANT,
-                        UNKNOWN, init, base, input, legal, goal, terminal,
+                        UNKNOWN, init, base, input, legal, goal, sees, terminal,
                         other)
 import os
 import importlib
@@ -50,11 +50,6 @@ def convert_to_propnet(filename):
     out_fn = os.path.abspath(out_fn)
     os.chdir('/Users/zac/work/comp/thesis/ggp-base')
     os.system(f'/usr/bin/env /Library/Java/JavaVirtualMachines/adoptopenjdk-11.jdk/Contents/Home/bin/java -Dfile.encoding=UTF-8 @/var/folders/dn/fgnx1mcx071958qc2p9nxkwr0000gn/T/cp_5xvvd7vwrtijdndq373ee21b1.argfile propnet_convert.Convert {filename} {out_fn}')
-    with open(out_fn) as f:
-        propnet_code = f.read().split("\n")
-        propnet_code[3] = "from constants import *"
-    with open(out_fn, "w") as f:
-        f.write("\n".join(propnet_code))
 
 
 cdef class Propnet:
@@ -67,6 +62,7 @@ cdef class Propnet:
     cdef public list input
     cdef public list init
     cdef public list goal
+    cdef public list sees
     cdef public terminal
 
     cdef public dict legal_for
@@ -116,9 +112,10 @@ cdef class Propnet:
         self.input    = [node for node in self.propositions if node.prop_type == input]
         self.init     = [node for node in self.propositions if node.prop_type == init]
         self.goal     = [node for node in self.propositions if node.prop_type == goal]
+        self.sees     = [node for node in self.propositions if node.prop_type == sees]
         self.terminal = [node for node in self.propositions if node.prop_type == terminal]
 
-        for x in [self.legal, self.propositions, self.base, self.input, self.init, self.goal, self.terminal]:
+        for x in [self.legal, self.propositions, self.base, self.input, self.init, self.goal, self.sees, self.terminal]:
             x.sort(key=lambda n: n.gdl)
 
         self.legal_for = {}

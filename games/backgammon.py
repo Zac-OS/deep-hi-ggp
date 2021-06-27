@@ -1,4 +1,4 @@
-# dumping propnet for /Users/zac/work/comp/thesis/adrian/gdl_games/backgammon.kif
+# dumping propnet for /Users/zac/work/comp/thesis/code/rulesheets_gdl2/backgammon.kif
 # number of roles 3
 
 from constants import *

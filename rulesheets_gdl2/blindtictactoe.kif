@@ -198,9 +198,6 @@
       (true (cell ?x ?y b))
       (true (control xplayer)))
 
-  (<= (sees ?w (mark ?x ?y))
-      (does ?w (mark ?x ?y))
-      (legal ?w (mark ?x ?y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Legality of moves

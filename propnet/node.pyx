@@ -1,6 +1,6 @@
 # cython: profile=True
 from constants import (AND, OR, PROPOSITION, TRANSITION, NOT, CONSTANT,
-                        UNKNOWN, base, input, legal, goal, terminal,
+                        UNKNOWN, base, input, legal, goal, sees, terminal,
                         other)
 import re
 # import numpy as np
