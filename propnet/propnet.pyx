@@ -196,6 +196,12 @@ cdef class Propnet:
         else:
             data = datacopy
 
+    def visible(self, data):
+        return (see for see in self.sees if data[see.id])
+
+    def visible_ids(self, data):
+        return tuple(see.id for see in self.sees if data[see.id])
+
     def legal_moves(self, data):
         return (legal for legal in self.legal if data[legal.id])
 

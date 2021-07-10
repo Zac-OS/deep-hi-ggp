@@ -1,0 +1,157 @@
+role(white)
+role(black)
+role(random)
+
+index(1)
+index(2)
+index(3)
+
+base(cell(M,N,x)) :- index(M) & index(N)
+base(cell(M,N,o)) :- index(M) & index(N)
+base(cell(M,N,b)) :- index(M) & index(N)
+
+base(tried(white,M,N)) :- index(M) & index(N)
+base(tried(black,M,N)) :- index(M) & index(N)
+
+init(cell(1,1,b))
+init(cell(1,2,b))
+init(cell(1,3,b))
+init(cell(2,1,b))
+init(cell(2,2,b))
+init(cell(2,3,b))
+init(cell(3,1,b))
+init(cell(3,2,b))
+init(cell(3,3,b))
+
+input(white,mark(M,N)) :- index(M) & index (N)
+input(black,mark(M,N)) :- index(M) & index (N)
+
+input(random,tiebreak(x))
+input(random,tiebreak(o))
+
+legal(white,mark(X,Y)) :-
+  index(X) &
+  index(Y) &
+  ~true(tried(white,X,Y))
+
+legal(black,mark(X,Y)) :-
+  index(X) &
+  index(Y) &
+  ~true(tried(black,X,Y))
+
+legal(random,tiebreak(x))
+legal(random,tiebreak(o))
+
+
+; any new attempt to mark a cell is recorded
+next(tried(W,M,N)) :-
+  does(W,mark(M,N))
+
+; all recorded attempts are remembered
+next(tried(W,M,N)) :-
+  true(tried(W,M,N))
+
+; white is successful in marking a blank cell
+; when black moves in a different column
+next(cell(M,N,x)) :-
+  does(white,mark(M,N)) &
+  true(cell(M,N,b)) &
+  does(black,mark(J,K)) &
+  distinct(M,J)
+
+; white is successful in marking a blank cell
+; when black moves in a different row
+next(cell(M,N,x)) :-
+  does(white,mark(M,N)) &
+  true(cell(M,N,b)) &
+  does(black,mark(J,K)) &
+  distinct(N,K)
+
+; black is successful in marking a blank cell
+; when white moves in a different column
+next(cell(M,N,o)) :-
+  does(black,mark(M,N)) &
+  true(cell(M,N,b)) &
+  does(white,mark(J,K)) &
+  distinct(M,J)
+
+; black is successful in marking a blank cell
+; when white moves in a different row
+next(cell(M,N,o)) :-
+  does(black,mark(M,N)) &
+  true(cell(M,N,b)) &
+  does(white,mark(J,K)) &
+  distinct(N,K)
+
+; if both players aim at the same cell, then that cell
+; gets marked by the result of the random tiebreak move
+next(cell(M,N,W)) :-
+  true(cell(M,N,b)) &
+  does(white,mark(M,N)) &
+  does(black,mark(M,N)) &
+  does(random,tiebreak(W))
+
+; markings are forever
+next(cell(M,N,x)) :-
+  true(cell(M,N,x))
+
+next(cell(M,N,o)) :-
+  true(cell(M,N,o))
+
+; a cell remains blank if no player attempts to mark it
+next(cell(M,N,b)) :-
+  true(cell(M,N,b)) &
+  ~marked(M,N)
+
+marked(M,N) :-
+  does(W,mark(M,N))
+
+percept(white,ok)
+percept(black,ok)
+
+; players get ok when they mark a blank cell
+; in a different column from where their opponent moves
+sees(R,ok) :-
+  does(R,mark(M,N)) &
+  true(cell(M,N,b)) &
+  does(S,mark(J,K)) &
+  distinct(M,J)
+
+; players get ok when they mark a blank cell
+; in a different row from where their opponent moves
+sees(R,ok) :-
+  does(R,mark(M,N)) &
+  true(cell(M,N,b)) &
+  does(S,mark(J,K)) &
+  distinct(N,K)
+
+; white gets ok when he marks a blank cell
+; and the random tiebreak went to his side
+sees(white,ok) :-
+  does(white,mark(M,N)) &
+  true(cell(M,N,b)) &
+  does(random,tiebreak(x))
+
+; black gets ok when he marks a blank cell
+; and random tiebreak went to his side
+sees(black,ok) :-
+  does(black,mark(M,N)) &
+  true(cell(M,N,b)) &
+  does(random,tiebreak(o))
+
+
+
+
+terminal :- line(x)
+terminal :- line(o)
+terminal :- ~open
+
+goal(white,100) :- line(x) & ~line(o)
+goal(white, 50) :- line(x) & line(o)
+goal(white, 50) :- ~open & ~line(x) & ~line(o)
+goal(white,  0) :- ~line(x) & line(o)
+
+goal(black,100) :- ~line(x) & line(o)
+goal(black, 50) :- line(x) & line(o)
+goal(black, 50) :- ~open & ~line(x) & ~line(o)
+goal(black,  0) :- line(x) & ~line(o)

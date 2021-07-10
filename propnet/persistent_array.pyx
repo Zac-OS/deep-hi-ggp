@@ -41,6 +41,9 @@ cdef class PersistentArray:
             raise IndexError(f'{key} out of bounds for PersistentArray of size {self.maxlen}')
         self.set(key, value)
 
+    def __repr__(self):
+        return str(int("".join(str(x) for x in self.values()), 2))[:5]
+
     cpdef values(self):
         cdef list ret = []
         self.tree.values(0, self.maxlen, ret)
