@@ -10,6 +10,7 @@ import re
 # ctypedef np.int32_t DTYPE_t
 
 LEGAL_RE = re.compile(r'\( *legal *(\w+) *(.+) *\)')
+SEES_RE = re.compile(r'\( *sees *(\w+) *(.+) *\)')
 GOAL_RE = re.compile(r'\( *goal *(\w+) *(\d+) *\)')
 
 
@@ -129,6 +130,9 @@ cdef class Proposition:
 
         if prop_type == legal:
             self.move_role, self.move_gdl = LEGAL_RE.search(gdl).groups()
+            assert(len(inputs) == 1)
+        elif prop_type == sees:
+            self.move_role, self.move_gdl = SEES_RE.search(gdl).groups()
             assert(len(inputs) == 1)
         elif prop_type == goal:
             self.role, score = GOAL_RE.match(gdl).groups()

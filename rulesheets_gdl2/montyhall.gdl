@@ -29,12 +29,8 @@
 (<= (legal candidate noop)
    (true (step 3)))
 
-(<= (sees candidate (open_door 1))
-   (does random (open_door 1)))
-(<= (sees candidate (open_door 2))
-   (does random (open_door 2)))
-(<= (sees candidate (open_door 3))
-   (does random (open_door 3)))
+(<= (sees candidate (open_door ?d))
+   (does random (open_door ?d)))
 
 (<= (next (car ?d))
    (does random (hide_car ?d)))
@@ -63,22 +59,10 @@
 (<= (next (step 4))
    (true (step 3)))
 
-(<= (sees candidate (car 1))
+(<= (sees candidate (car ?c))
    (true (step 3))
-   (true (car 1))
-   (next_chosen 1))
-
-
-(<= (sees candidate (car 2))
-   (true (step 3))
-   (true (car 2))
-   (next_chosen 2))
-
-
-(<= (sees candidate (car 3))
-   (true (step 3))
-   (true (car 3))
-   (next_chosen 3))
+   (true (car ?c))
+   (next_chosen ?c))
 
 (<= terminal
    (true (step 4)))

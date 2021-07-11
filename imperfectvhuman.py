@@ -1,6 +1,6 @@
 from imperfectNode import ImperfectNode
 from perfectNode import PerfectNode
-
+import random
 from propnet import load_propnet
 # from model import Model
 import time
@@ -29,23 +29,26 @@ cur = PerfectNode(propnet, data)
 for step in range(1000):
     legal = cur.propnet.legal_moves_dict(cur.data)
     taken_moves = {}
-    print("visible: ", [x.gdl for x in propnet.visible(cur.data)])
     for role in propnet.roles:
-        if role != my_role:
-            moves = legal[role]
-            if len(moves) > 1:
-                print('Valid moves for', role)
-                print(*(move.move_gdl for move in moves), sep='\n')
+        if role != "random":
+            print(f"visible for {role}: ", [x.gdl for x in propnet.sees_moves_for(role, cur.data)])
+    for role in propnet.roles:
+        moves = legal[role]
+        if len(moves) == 1:
+            taken_moves[role] = moves[0]
+        elif role == "random":
+            taken_moves[role] = random.choice(moves)
+        elif role != my_role:
+            print('Valid moves for', role)
+            print(*(move.move_gdl for move in moves), sep='\n')
+            m = input('Enter move: ')
+            matching = [move for move in moves if m in move.move_gdl]
+            while not matching:
+                print('No moves containing %r' % m)
                 m = input('Enter move: ')
                 matching = [move for move in moves if m in move.move_gdl]
-                while not matching:
-                    print('No moves containing %r' % m)
-                    m = input('Enter move: ')
-                    matching = [move for move in moves if m in move.move_gdl]
-                print('Making move', matching[0].move_gdl)
-                taken_moves[role] = matching[0]
-            else:
-                taken_moves[role] = moves[0]
+            print('Making move', matching[0].move_gdl)
+            taken_moves[role] = matching[0]
 
     start = time.time()
     if len(legal[my_role]) == 1:
@@ -54,10 +57,8 @@ for step in range(1000):
         taken_moves[my_role] = legal[my_role][0]
         states = set()
         for i, state in enumerate(myNode.generate_posible_games()):
-            states.add( str(int("".join(str(int(x)) for x in state), 2))[:10])
-            if i < 10:
-                print("state:  ", str(int("".join(str(int(x)) for x in state), 2))[:5])
-            if i > 10:
+            states.add(  int("".join(str(int(x)) for x in state), 2).__hash__())
+            if i > 100:
                 break
         print(len(states))
         # print("should eval net now:")
@@ -78,12 +79,12 @@ for step in range(1000):
     moves = [taken_moves[role].id for role in propnet.roles]
 
     cur = cur.get_or_make_child(tuple(moves))
-    myNode.add_history((taken_moves[my_role].id, propnet.visible_ids(cur.data)))
+    myNode.add_history((taken_moves[my_role].id, propnet.sees_ids_for(my_role, cur.data)))
     print('Moves were:')
     for move in propnet.legal:
         if move.id in moves and move.move_gdl.strip() != 'noop':
             print(move.move_role, move.move_gdl)
-    print('Play took %.4f seconds' % (time.time() - start))
+    # print('Play took %.4f seconds' % (time.time() - start))
     if cur.terminal:
         break
 

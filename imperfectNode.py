@@ -21,15 +21,10 @@ class ImperfectNode:
         similar to previously sampled on earlier rounds.
         Also could change to a dfs of bfs if it is taking a long time
         in copying the data for states"""
-        print(self.history)
         while True:
-            print("start---------------")
             x = self.generate_single_state(list(self.data.values()), 0)
             if x is not None:
-                print("end---------------")
                 yield x
-            else:
-                print("failed----------------------------------------")
 
     def generate_single_state(self, data, depth):
         # assert(valid_data(self.propnet.visible(data), depth))
@@ -39,13 +34,8 @@ class ImperfectNode:
         roles = [role for role in self.propnet.roles if role != self.role]
 
         moves = [self.history[depth][0]]
-        # print("we do:", moves[0])
-        # for move in legal.values():
-        #     moves.append(random.choice(move).input_id)
-        for role in roles:
-            x = random.choice(legal[role])
-            print(f"{role} make move:", x.move_gdl)
-            moves.append(x.input_id)
+        for move in legal.values():
+            moves.append(random.choice(move).input_id)
         self.propnet.do_step(data, moves)
         if self.propnet.is_terminal(data):
             return None
@@ -55,7 +45,7 @@ class ImperfectNode:
 
 
     def valid_data(self, data, depth):
-        visible = self.propnet.visible_ids(data)
+        visible = self.propnet.sees_ids_for(self.role, data)
         if len(visible) != len(self.history[depth][1]):
             return False
         for i, x in enumerate(self.history[depth][1]):
