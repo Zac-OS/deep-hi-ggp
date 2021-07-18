@@ -26,12 +26,13 @@ data, propnet = load_propnet(game)
 
 myNode = ImperfectNode(propnet, data, my_role)
 cur = PerfectNode(propnet, data)
+sees_data = cur.data
 for step in range(1000):
     legal = cur.propnet.legal_moves_dict(cur.data)
     taken_moves = {}
     for role in propnet.roles:
         if role != "random":
-            print(f"visible for {role}: ", [x.gdl for x in propnet.sees_moves_for(role, cur.data)])
+            print(f"visible for {role}: ", [x.gdl for x in propnet.sees_moves_for(role, sees_data)])
     for role in propnet.roles:
         moves = legal[role]
         if len(moves) == 1:
@@ -78,8 +79,10 @@ for step in range(1000):
 #                 taken_moves[my_role] = propnet.id_to_move[id]
     moves = [taken_moves[role].id for role in propnet.roles]
 
+    sees_data = list(cur.data.values())
+    propnet.do_sees_step(sees_data, tuple(moves))
     cur = cur.get_or_make_child(tuple(moves))
-    myNode.add_history((taken_moves[my_role].id, propnet.sees_ids_for(my_role, cur.data)))
+    myNode.add_history((taken_moves[my_role].id, propnet.sees_ids_for(my_role, sees_data)))
     print('Moves were:')
     for move in propnet.legal:
         if move.id in moves and move.move_gdl.strip() != 'noop':
@@ -88,5 +91,9 @@ for step in range(1000):
     if cur.terminal:
         break
 
+print("Terminal state reaced")
+for role in propnet.roles:
+    if role != "random":
+        print(f"visible for {role}: ", [x.gdl for x in propnet.sees_moves_for(role, sees_data)])
 for role, score in cur.scores.items():
     print(role, 'got', score)

@@ -129,7 +129,7 @@
 ; in a different column from where their opponent moves
   (<= (sees ?r ok)
     (does ?r (mark ?m ?n))
-    (true(cell ?m ?n ?r))
+    (true(cell ?m ?n b))
     (does ?s (mark ?j ?k))
     (distinct ?m ?j))
 
@@ -137,7 +137,7 @@
 ; in a different row from where their opponent moves
   (<= (sees ?r ok)
     (does ?r (mark ?m ?n))
-    (true(cell ?m ?n ?r))
+    (true(cell ?m ?n b))
     (does ?s (mark ?j ?k))
     (distinct ?n ?k))
 
@@ -145,7 +145,7 @@
 ; and the random tiebreak went to his side
   (<= (sees ?r ok)
     (does ?r (mark ?m ?n))
-    (true(cell ?m ?n ?r))
+    (true(cell ?m ?n b))
     (does random (tiebreak ?r)))
 
   (<= terminal
