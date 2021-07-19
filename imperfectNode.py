@@ -14,6 +14,7 @@ class ImperfectNode:
         self.role = role
         self.other_roles = [role for role in self.propnet.roles if role != self.role]
         self.invalid = {}
+        self.move_generator = {}
 
     def add_history(self, round):
         self.history.append(round)
@@ -26,6 +27,7 @@ class ImperfectNode:
         in copying the data for states"""
         while True:
             x = self.generate_single_state(list(self.data.values()), 0)
+            assert x != -1, "No valid set of moves"
             if x is not None:
                 yield x
 
@@ -58,23 +60,26 @@ class ImperfectNode:
     def data2num(self, data):
         return int("".join(str(int(x)) for x in data), 2)
 
-    def choose_move(self, legal, depth, state_num):
-        moves = [self.history[depth][0]]
+    def set_generator(self, legal, depth, state_num):
+        moves = [[self.history[depth][0]]]
         for role in self.other_roles:
-            move = random.choice(legal[role])
-            moves.append(move.input_id)
-        moves = tuple(moves)
+            moves.append(tuple(legal[role][i].input_id for i in random.sample(range(len(legal[role])), len(legal[role]))))
 
-        if moves in self.invalid[state_num]:
-            finished_early = False
-            for other_moves in itertools.product(*[random.sample(legal[role], len(legal[role])) for role in self.other_roles]):
-                moves = tuple(moves[:1] + tuple(move.input_id for move in other_moves))
+        self.move_generator[state_num] = itertools.product(*moves)
+
+    def choose_move(self, legal, depth, state_num):
+        if state_num not in self.move_generator:
+            self.set_generator(legal, depth, state_num)
+        else:
+            for moves in self.move_generator[state_num]:
                 if moves not in self.invalid[state_num]:
-                    finished_early = True
-                    break
-            if not finished_early:
-                return None
-        return moves
+                    return moves
+            self.set_generator(legal, depth, state_num)
+
+        for moves in self.move_generator[state_num]:
+            if moves not in self.invalid[state_num]:
+                return moves
+        return None
 
     def valid_data(self, data, moves, depth):
         self.propnet.do_sees_step(data, tuple(moves))
