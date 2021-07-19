@@ -60,21 +60,16 @@ class ImperfectNode:
     def data2num(self, data):
         return int("".join(str(int(x)) for x in data), 2)
 
-    def set_generator(self, legal, depth, state_num):
-        moves = [[self.history[depth][0]]]
-        for role in self.other_roles:
-            moves.append(tuple(legal[role][i].input_id for i in random.sample(range(len(legal[role])), len(legal[role]))))
-
-        self.move_generator[state_num] = itertools.product(*moves)
-
     def choose_move(self, legal, depth, state_num):
-        if state_num not in self.move_generator:
-            self.set_generator(legal, depth, state_num)
-        else:
+        if state_num in self.move_generator:
             for moves in self.move_generator[state_num]:
                 if moves not in self.invalid[state_num]:
                     return moves
-            self.set_generator(legal, depth, state_num)
+
+        moves = [[self.history[depth][0]]]
+        for role in self.other_roles:
+            moves.append(tuple(legal[role][i].input_id for i in random.sample(range(len(legal[role])), len(legal[role]))))
+        self.move_generator[state_num] = itertools.product(*moves)
 
         for moves in self.move_generator[state_num]:
             if moves not in self.invalid[state_num]:

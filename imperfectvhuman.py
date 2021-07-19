@@ -38,7 +38,8 @@ for step in range(1000):
         if len(moves) == 1:
             taken_moves[role] = moves[0]
         elif role == "random":
-            taken_moves[role] = random.choice(moves)
+            taken_moves[role] = moves[step % len(moves)]
+            # taken_moves[role] = random.choice(moves)
         elif role != my_role:
             print('Valid moves for', role)
             print(*(move.move_gdl for move in moves), sep='\n')
@@ -58,7 +59,7 @@ for step in range(1000):
         taken_moves[my_role] = legal[my_role][0]
         states = set()
         for i, state in enumerate(myNode.generate_posible_games()):
-            states.add(  int("".join(str(int(x)) for x in state), 2).__hash__())
+            states.add(int("".join(str(int(x)) for x in state), 2))
             if i > 100:
                 break
         print(len(states))
