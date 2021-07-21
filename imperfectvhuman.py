@@ -1,9 +1,11 @@
 from imperfectNode import ImperfectNode
 from perfectNode import PerfectNode
+from CFRTrainer import CFRTrainer
 import random
 from propnet import load_propnet
 # from model import Model
 import time
+import numpy as np
 import sys
 
 game = sys.argv[1]
@@ -56,13 +58,43 @@ for step in range(1000):
     if len(legal[my_role]) == 1:
         taken_moves[my_role] = legal[my_role][0]
     else:
-        taken_moves[my_role] = legal[my_role][0]
-        states = set()
-        for i, state in enumerate(myNode.generate_posible_games()):
-            states.add(int("".join(str(int(x)) for x in state), 2))
-            if i > 100:
-                break
-        print(len(states))
+        if step > 5:
+            cfr_trainer = CFRTrainer(myNode)
+            num_iterations = 50
+            if step == 6:
+                num_iterations = 200
+            if step == 7:
+                num_iterations = 500
+            utils = cfr_trainer.train(num_iterations)
+            for i, player in enumerate(cfr_trainer.players):
+                print(f"Computed average game value for player {player}: {(utils[i] / num_iterations):.3f}")
+            # for state, info_set in cfr_trainer.infoset_map.items():
+            #     if cfr_trainer.state_names[state].startswith("random"):
+            #         continue
+            #     print(f"{cfr_trainer.state_names[state]}:    {info_set.get_average_strategy()}")
+            # policy = cfr_trainer.get_root_policy_for_player(my_role, 1000)
+            policy = cfr_trainer.get_root_policy_for_player(my_role, num_iterations)
+            print(f"policy = {policy}")
+            choice = random.random()
+            for i, p in enumerate(policy):
+                if choice < p:
+                    print("chosen", i)
+                    taken_moves[my_role] = legal[my_role][i]
+                    break
+                else:
+                    choice -= p
+        else:
+            # taken_moves[my_role] = random.choice(legal[my_role])
+            taken_moves[my_role] = legal[my_role][0]
+
+
+        # states = set()
+        # for i, state in enumerate(myNode.generate_posible_games()):
+        #     states.add(int("".join(str(int(x)) for x in state), 2))
+        #     if i > 100:
+        #         break
+        # print(len(states))
+
         # print("should eval net now:")
         # model.print_eval(propnet.get_state(cur.data))
 #         for i in range(N):

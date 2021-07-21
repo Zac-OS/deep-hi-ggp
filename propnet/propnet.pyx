@@ -203,26 +203,6 @@ cdef class Propnet:
         else:
             data = datacopy
 
-    cpdef do_non_sees_step(self, data, actions=set(), init=False):
-        actions = {self.legal_to_input[x] for x in actions}
-
-        if isinstance(data, PersistentArray):
-            datacopy = list(data.values())
-            copy2 = list(datacopy)
-        else:
-            datacopy = data
-
-        for id in self.topsorted:
-            datacopy[id] = self.nodes[id].eval(datacopy, init, actions)
-
-        if isinstance(data, PersistentArray):
-            for i, (a, b) in enumerate(zip(datacopy, copy2)):
-                if a != b:
-                    data[i] = a
-        else:
-            data = datacopy
-
-
     cpdef do_sees_step(self, data, actions=set(), init=False):
         actions = {self.legal_to_input[x] for x in actions}
 
@@ -235,6 +215,25 @@ cdef class Propnet:
         for id in self.topsorted:
             if id not in self.posts:
                 datacopy[id] = self.nodes[id].eval(datacopy, init, actions)
+
+        if isinstance(data, PersistentArray):
+            for i, (a, b) in enumerate(zip(datacopy, copy2)):
+                if a != b:
+                    data[i] = a
+        else:
+            data = datacopy
+
+    cpdef do_non_sees_step(self, data, actions=set(), init=False):
+        actions = {self.legal_to_input[x] for x in actions}
+
+        if isinstance(data, PersistentArray):
+            datacopy = list(data.values())
+            copy2 = list(datacopy)
+        else:
+            datacopy = data
+
+        for id in self.topsorted:
+            datacopy[id] = self.nodes[id].eval(datacopy, init, actions)
 
         if isinstance(data, PersistentArray):
             for i, (a, b) in enumerate(zip(datacopy, copy2)):
