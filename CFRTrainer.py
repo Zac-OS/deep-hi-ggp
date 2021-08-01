@@ -86,6 +86,8 @@ class CFRTrainer():
                 # print(self.infoset_map[state].get_average_strategy())
                 policy += self.infoset_map[state].get_average_strategy()
                 i += 1
+                # if i % 10 == 0:
+                #     print(i)
                 if i > num_iterations:
                     break
         return policy / num_iterations
@@ -98,7 +100,7 @@ class CFRTrainer():
             i += 1
             if i > num_iterations:
                 break
-            # if i % 50 == 0:
+            # if i % 10 == 0:
             #     print(i)
         return utils
 

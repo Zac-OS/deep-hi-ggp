@@ -58,13 +58,13 @@ for step in range(1000):
     if len(legal[my_role]) == 1:
         taken_moves[my_role] = legal[my_role][0]
     else:
-        if step > 5:
+        if step > 40:
             cfr_trainer = CFRTrainer(myNode)
             num_iterations = 50
-            if step == 6:
-                num_iterations = 200
-            if step == 7:
-                num_iterations = 500
+            # if step == 6:
+            #     num_iterations = 100
+            # if step == 7:
+            #     num_iterations = 500
             utils = cfr_trainer.train(num_iterations)
             for i, player in enumerate(cfr_trainer.players):
                 print(f"Computed average game value for player {player}: {(utils[i] / num_iterations):.3f}")
@@ -73,7 +73,7 @@ for step in range(1000):
             #         continue
             #     print(f"{cfr_trainer.state_names[state]}:    {info_set.get_average_strategy()}")
             # policy = cfr_trainer.get_root_policy_for_player(my_role, 1000)
-            policy = cfr_trainer.get_root_policy_for_player(my_role, num_iterations)
+            policy = cfr_trainer.get_root_policy_for_player(my_role, num_iterations * 2)
             print(f"policy = {policy}")
             choice = random.random()
             for i, p in enumerate(policy):
@@ -87,13 +87,13 @@ for step in range(1000):
             # taken_moves[my_role] = random.choice(legal[my_role])
             taken_moves[my_role] = legal[my_role][0]
 
-
-        # states = set()
-        # for i, state in enumerate(myNode.generate_posible_games()):
-        #     states.add(int("".join(str(int(x)) for x in state), 2))
-        #     if i > 100:
-        #         break
-        # print(len(states))
+        if step > 4:
+            states = set()
+            for i, state in enumerate(myNode.generate_posible_games()):
+                states.add(int("".join(str(int(x)) for x in state), 2))
+                if i > 1000:
+                    break
+            print(len(states))
 
         # print("should eval net now:")
         # model.print_eval(propnet.get_state(cur.data))
