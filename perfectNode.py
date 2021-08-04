@@ -30,14 +30,9 @@ class PerfectNode:
         if self.terminal:
             print('Terminal, scores:', self.scores)
             return
-        print('Count:', self.count)
+
         for role, moves in self.actions.items():
             print(role, end=':\n')
-            for move in moves:
-                print('%s: count = %d, win = %f' %
-                      (move.move_gdl,
-                       self.move_counts[role][move.id],
-                       self.win_sums[role][move.id]))
 
     def get_or_make_child(self, ids):
         if ids not in self.children:

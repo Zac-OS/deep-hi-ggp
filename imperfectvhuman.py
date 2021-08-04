@@ -1,4 +1,4 @@
-from imperfectNode import ImperfectNode
+from imperfectNode_fast_and_approx import ImperfectNode
 from perfectNode import PerfectNode
 from CFRTrainer import CFRTrainer
 import random
@@ -18,24 +18,19 @@ data, propnet = load_propnet(game)
 # model = Model(propnet)
 # model.load_most_recent(game)
 
-# history = {
-#     role1: [
-#         (moveUp, [0, 0, 0, 0, 0, 0]), # (my move, seen state) for round 1
-#         (noOp, [0, 0, 0, 0, 0, 0]), # (my move, seen state) for round 2
-#         (moveLeft, [0, 1, 0, 1, 0, 0]),
-#     ],
-# }
 
-myNode = ImperfectNode(propnet, data, my_role)
-cur = PerfectNode(propnet, data)
-sees_data = cur.data
+myNode = ImperfectNode(propnet, data.copy(), my_role)
+cur = PerfectNode(propnet, data.copy())
+# sees_data = data.copy()
+visible = propnet.visible_dict(data)
 for step in range(1000):
-    legal = cur.propnet.legal_moves_dict(cur.data)
+    legal = propnet.legal_moves_dict(data)
     taken_moves = {}
     for role in propnet.roles:
         if role != "random":
-            print(f"visible for {role}: ", [x.gdl for x in propnet.sees_moves_for(role, sees_data)])
+            print(f"visible for {role}: ", [x.gdl for x in visible[role]])
     for role in propnet.roles:
+
         moves = legal[role]
         if len(moves) == 1:
             taken_moves[role] = moves[0]
@@ -58,21 +53,13 @@ for step in range(1000):
     if len(legal[my_role]) == 1:
         taken_moves[my_role] = legal[my_role][0]
     else:
-        if step > 40:
+        if step > 50:
             cfr_trainer = CFRTrainer(myNode)
-            num_iterations = 50
-            # if step == 6:
-            #     num_iterations = 100
-            # if step == 7:
-            #     num_iterations = 500
+            num_iterations = 100
             utils = cfr_trainer.train(num_iterations)
             for i, player in enumerate(cfr_trainer.players):
                 print(f"Computed average game value for player {player}: {(utils[i] / num_iterations):.3f}")
-            # for state, info_set in cfr_trainer.infoset_map.items():
-            #     if cfr_trainer.state_names[state].startswith("random"):
-            #         continue
-            #     print(f"{cfr_trainer.state_names[state]}:    {info_set.get_average_strategy()}")
-            # policy = cfr_trainer.get_root_policy_for_player(my_role, 1000)
+
             policy = cfr_trainer.get_root_policy_for_player(my_role, num_iterations * 2)
             print(f"policy = {policy}")
             choice = random.random()
@@ -87,7 +74,7 @@ for step in range(1000):
             # taken_moves[my_role] = random.choice(legal[my_role])
             taken_moves[my_role] = legal[my_role][0]
 
-        if step > 4:
+        if step > -6:
             states = set()
             for i, state in enumerate(myNode.generate_posible_games()):
                 states.add(int("".join(str(int(x)) for x in state), 2))
@@ -112,21 +99,23 @@ for step in range(1000):
 #                 taken_moves[my_role] = propnet.id_to_move[id]
     moves = [taken_moves[role].id for role in propnet.roles]
 
-    sees_data = list(cur.data.values())
-    propnet.do_sees_step(sees_data, tuple(moves))
-    cur = cur.get_or_make_child(tuple(moves))
-    myNode.add_history((taken_moves[my_role].id, propnet.sees_ids_for(my_role, sees_data)))
+    data = data.copy()
+    propnet.do_sees_step(data, tuple(moves))
+    visible = propnet.visible_dict(data)
+    myNode.add_history((taken_moves[my_role].id, propnet.sees_ids_for(my_role, data)))
+    data = data.copy()
+    propnet.do_non_sees_step(data, tuple(moves))
     print('Moves were:')
     for move in propnet.legal:
         if move.id in moves and move.move_gdl.strip() != 'noop':
             print(move.move_role, move.move_gdl)
     # print('Play took %.4f seconds' % (time.time() - start))
-    if cur.terminal:
+    if propnet.is_terminal(data):
         break
 
 print("Terminal state reaced")
 for role in propnet.roles:
     if role != "random":
-        print(f"visible for {role}: ", [x.gdl for x in propnet.sees_moves_for(role, sees_data)])
-for role, score in cur.scores.items():
+        print(f"visible for {role}: ", [x.gdl for x in visible[role]])
+for role, score in propnet.scores(data).items():
     print(role, 'got', score)

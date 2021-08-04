@@ -125,11 +125,11 @@ cdef class Propnet:
                 self.legal_for[leg.move_role] = []
             self.legal_for[leg.move_role].append(leg)
 
-        self.sees_for = {}
-        for see in self.sees:
-            if see.move_role not in self.sees_for:
-                self.sees_for[see.move_role] = []
-            self.sees_for[see.move_role].append(see)
+        # self.sees_for = {}
+        # for see in self.sees:
+        #     if see.move_role not in self.sees_for:
+        #         self.sees_for[see.move_role] = []
+        #     self.sees_for[see.move_role].append(see)
 
         self.id_to_move = {}
         for move in self.legal:
@@ -245,8 +245,15 @@ cdef class Propnet:
     def visible(self, data):
         return (see for see in self.sees if data[see.id])
 
-    def visible(self, data, sees):
-        return (see for see in self.sees if data[see.id].eval())
+    def visible_dict(self, data):
+        sees = defaultdict(list)
+        for move in self.visible(data):
+            sees[move.move_role].append(move)
+        return sees
+
+
+    # def visible(self, data, sees):
+    #     return (see for see in self.sees if data[see.id].eval())
 
     # def visible_ids(self, data):
     #     return tuple(see.id for see in self.sees if data[see.id])
