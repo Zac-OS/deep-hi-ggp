@@ -1,8 +1,11 @@
 import numpy as np
 
 class InformationSet():
-    def __init__(self, num_actions, is_random_player):
-        self.cumulative_regrets = np.zeros(shape=num_actions)
+    def __init__(self, num_actions, is_random_player, init_policy=None):
+        if init_policy is not None:
+            self.cumulative_regrets = init_policy
+        else:
+            self.cumulative_regrets = np.zeros(shape=num_actions)
         self.strategy_sum = np.zeros(shape=num_actions)
         self.num_actions = num_actions
         self.is_random_player = is_random_player

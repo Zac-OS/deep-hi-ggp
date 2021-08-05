@@ -122,9 +122,6 @@ class Model:
 
     def train(self, epochs=5, batchsize=128):
         # Sample from replay buffer and train
-        # if len(replay_buffer) < batchsize:
-        # print('Skipping as replay buffer only has', len(replay_buffer), 'items')
-        # batchsize = min(batchsize, len(self.replay_buffer))
         if batchsize > len(self.replay_buffer):
             print('Skipping as replay buffer too small')
             return
