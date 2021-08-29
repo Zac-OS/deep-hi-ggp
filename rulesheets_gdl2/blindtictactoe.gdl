@@ -155,6 +155,8 @@
   (<= terminal
     (not open))
 
+  (<= (goal random 0))
+
   (<= (goal x 100)
     (line x)
     (not (line o)))

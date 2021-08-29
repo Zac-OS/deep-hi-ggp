@@ -4,10 +4,10 @@ import random
 from informationSet import InformationSet
 
 class CFRTrainer():
-    def __init__(self, imperfectNode, depth=999999999, model=None):
+    def __init__(self, node, depth=999999999, model=None):
         self.infoset_map = {}
-        self.node = imperfectNode
-        self.propnet = imperfectNode.propnet
+        self.node = node
+        self.propnet = node.propnet
         self.players = self.propnet.roles
         self.num_players = len(self.players)
         self.state_names = {}
@@ -43,16 +43,18 @@ class CFRTrainer():
             return np.array([scores[player] if player != "random" else 0 for player in self.players])
 
         if depth == self.depth:
-            return np.array([values[player] for player in values if player != "random"])
+            return np.array([values[player] if player != "random" else 0 for player in values])
 
         assert depth < self.depth
 
         legal_moves = list(self.propnet.legal_moves_for(self.players[active_player], data))
         assert len(legal_moves) > 0
 
-        data_num = self.node.data2num(data) * self.num_players + active_player
+        data_num = self.propnet.data2num(data) * self.num_players + active_player
         if self.model:
-            info_set = self.get_information_set(data_num, len(legal_moves), self.players[active_player] == "random", probs[self.players[active_player]])
+            probs_dict = probs[self.players[active_player]]
+            probs_array = np.array([probs_dict[move.id] for move in legal_moves])
+            info_set = self.get_information_set(data_num, len(legal_moves), self.players[active_player] == "random", probs_array)
         else:
             info_set = self.get_information_set(data_num, len(legal_moves), self.players[active_player] == "random")
         self.state_names[data_num] = f"{self.players[active_player]}: {[m.gdl for m in legal_moves]}"
@@ -78,14 +80,18 @@ class CFRTrainer():
                 self.propnet.do_step(data_copy, [move.input_id for move in moves_copy])
                 moves_copy = []
                 if self.model:
-                    probs_, values = self.model.eval(self.propnet.get_state(data))
+                    probs, values = self.model.eval(self.propnet.get_state(data))
                     # probs = [np.zeros(shape=len(self.propnet.legal_for[player])) for player in players]
-                    probs = []
-                    for player in players:
-                        legal = self.propnet.legal_for[player]
-                        probs.append(np.zeros(shape=len(legal)))
-                        for i, prob in enumerate(probs_):
-                            probs[-1][i] = prob
+                    # probs = []
+                    # for player in self.players:
+                    #     # legal = self.propnet.legal_for[player]
+                    #     # probs.append(np.zeros(shape=len(legal)))
+                    #     # for i, prob in enumerate(probs_[player]):
+                    #     #     probs[-1][i] = prob
+                    #     probs_dict = {}
+                    #     for prob, inp in zip(probs_[0], self.propnet.legal_for[player]):
+                    #         probs_dict[inp.id] = prob
+                    #     probs.append(probs_dict)
                 counterfactual_values[ix] = self.cfr(data_copy, new_reach_probabilities, next_player, moves_copy, probs, values, depth+1)
             else:
                 counterfactual_values[ix] = self.cfr(data_copy, new_reach_probabilities, next_player, moves_copy, probs, values, depth)
@@ -99,40 +105,30 @@ class CFRTrainer():
             info_set.cumulative_regrets[ix] += cf_reach_prob * regrets
         return node_values
 
-    def get_root_policy_for_player(self, player, num_iterations):
-        player_num = self.players.index(player)
-        data = next(self.node.generate_posible_games())
-        policy = np.zeros(len(list(self.propnet.legal_moves_for(self.players[player_num], data))))
-        i = 1
-        for data in self.node.generate_posible_games():
-            state = self.node.data2num(data) * self.num_players + player_num
-            if state in self.infoset_map:
-                # print(self.infoset_map[state].get_average_strategy())
-                policy += self.infoset_map[state].get_average_strategy()
-                i += 1
-                # if i % 10 == 0:
-                #     print(i)
-                if i > num_iterations:
-                    break
-        return policy / num_iterations
-
     def train_(self, num_iterations: int) -> int:
         utils = np.zeros(self.num_players)
         i = 0
-        for data in self.node.generate_posible_games():
+        for data in self.data_generator():
             probs, values = None, None
             if self.model:
                 probs, values = self.model.eval(self.propnet.get_state(data))
+                # probs = []
+                # for player in self.players:
+                #     probs_dict = {}
+                #     for prob, inp in zip(probs_[0], self.propnet.legal_for[player]):
+                #         probs_dict[inp.id] = prob
+                #     probs.append(probs_dict)
             utils += self.cfr(data, np.ones(self.num_players), 0, [], probs, values, 0)
             i += 1
             if i > num_iterations:
                 break
+            # print(i)
             # if i % 10 == 0:
             #     print(i)
         return utils
 
     def train(self, num_iterations: int) -> int:
-        self.train_(num_iterations//10)
-        self.reset()
-        utils = self.train_(num_iterations)
+        # self.train_(num_iterations//10)
+        # self.reset()
+        utils = self.train_(num_iterations) / num_iterations
         return utils

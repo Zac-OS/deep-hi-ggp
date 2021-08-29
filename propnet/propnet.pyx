@@ -289,6 +289,9 @@ cdef class Propnet:
     def get_state(self, data):
         return [int(data[p.id]) for p in self.propositions]
 
+    def data2num(self, data):
+        return int("".join(str(int(x)) for x in data), 2)
+
     def scores(self, data):
         if self.is_terminal(data):
             scores = {}

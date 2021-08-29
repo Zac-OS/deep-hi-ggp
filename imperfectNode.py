@@ -93,7 +93,7 @@ class ImperfectNode:
                 yield x
 
     def generate_single_state(self, data, depth, parentNode=None):
-        state_num = self.data2num(data)
+        state_num = self.propnet.data2num(data)
         if state_num not in self.nodes:
             # assert parentNode is None
             # print(state_num.__hash__(), depth, parentNode)
@@ -137,9 +137,6 @@ class ImperfectNode:
         # self.nodes[state_num].child_nodes.append(x)
         # self.nodes[self.data2num(data)] = x
         return res
-
-    def data2num(self, data):
-        return int("".join(str(int(x)) for x in data), 2)
 
     def choose_move(self, state_num):
         node = self.nodes[state_num]

@@ -31,7 +31,7 @@ class ImperfectNode:
         if depth == len(self.history):
             return data
         legal = self.propnet.legal_moves_dict(data)
-        state_num = self.data2num(data)
+        state_num = self.propnet.data2num(data)
         if state_num not in self.valid:
             self.valid[state_num] = set()
 
@@ -55,9 +55,6 @@ class ImperfectNode:
             return None
         self.valid[state_num].add(moves)
         return res
-
-    def data2num(self, data):
-        return int("".join(str(int(x)) for x in data), 2)
 
     def choose_move(self, legal, depth, state_num):
         if state_num in self.move_generator:
