@@ -16,3 +16,7 @@ class CFRTrainerPerfect(CFRTrainer):
     def data_generator(self):
         while True:
             yield self.node.data.copy()
+
+    def train(self) -> int:
+        utils = self.train_(1) / 2
+        return utils

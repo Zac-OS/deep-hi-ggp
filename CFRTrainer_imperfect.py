@@ -27,3 +27,10 @@ class CFRTrainerImperfect(CFRTrainer):
 
     def data_generator(self):
         return self.node.generate_posible_games()
+
+    def train(self, num_iterations: int) -> int:
+        if not self.model:
+            self.train_(num_iterations//10)
+            self.reset()
+        utils = self.train_(num_iterations) / (num_iterations+1)
+        return utils

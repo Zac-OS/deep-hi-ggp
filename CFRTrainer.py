@@ -36,10 +36,10 @@ class CFRTrainer():
     #     _, values = self.model.eval(self.propnet.get_state(data))
     #     return np.array([values[player] for player in values if player != "random"])
 
-    def cfr(self, data, reach_probabilities: np.array, active_player: int, moves, probs, values, depth) -> np.array:
+    # @profile
+    def cfr(self, data, reach_probabilities: np.array, active_player: int, moves, probs, values, depth, data_num) -> np.array:
         if self.propnet.is_terminal(data):
             scores = self.propnet.scores(data)
-            # print(scores)
             return np.array([scores[player] if player != "random" else 0 for player in self.players])
 
         if depth == self.depth:
@@ -50,14 +50,14 @@ class CFRTrainer():
         legal_moves = list(self.propnet.legal_moves_for(self.players[active_player], data))
         assert len(legal_moves) > 0
 
-        data_num = self.propnet.data2num(data) * self.num_players + active_player
+        state_num = data_num + active_player
         if self.model:
             probs_dict = probs[self.players[active_player]]
             probs_array = np.array([probs_dict[move.id] for move in legal_moves])
-            info_set = self.get_information_set(data_num, len(legal_moves), self.players[active_player] == "random", probs_array)
+            info_set = self.get_information_set(state_num, len(legal_moves), self.players[active_player] == "random", probs_array)
         else:
-            info_set = self.get_information_set(data_num, len(legal_moves), self.players[active_player] == "random")
-        self.state_names[data_num] = f"{self.players[active_player]}: {[m.gdl for m in legal_moves]}"
+            info_set = self.get_information_set(state_num, len(legal_moves), self.players[active_player] == "random")
+        self.state_names[state_num] = f"{self.players[active_player]}: {[m.gdl for m in legal_moves]}"
 
         strategy = info_set.get_strategy(reach_probabilities[active_player])
         next_player = (active_player + 1) % self.num_players
@@ -73,32 +73,20 @@ class CFRTrainer():
             new_reach_probabilities[active_player] *= action_probability
 
             moves_copy = moves.copy()
-            # moves_copy.append(action.input_id)
             moves_copy.append(action)
             if next_player == 0:
                 data_copy = data.copy()
                 self.propnet.do_step(data_copy, [move.input_id for move in moves_copy])
+                next_data_num = self.propnet.data2num(data_copy) * self.num_players
                 moves_copy = []
                 if self.model:
-                    probs, values = self.model.eval(self.propnet.get_state(data))
-                    # probs = [np.zeros(shape=len(self.propnet.legal_for[player])) for player in players]
-                    # probs = []
-                    # for player in self.players:
-                    #     # legal = self.propnet.legal_for[player]
-                    #     # probs.append(np.zeros(shape=len(legal)))
-                    #     # for i, prob in enumerate(probs_[player]):
-                    #     #     probs[-1][i] = prob
-                    #     probs_dict = {}
-                    #     for prob, inp in zip(probs_[0], self.propnet.legal_for[player]):
-                    #         probs_dict[inp.id] = prob
-                    #     probs.append(probs_dict)
-                counterfactual_values[ix] = self.cfr(data_copy, new_reach_probabilities, next_player, moves_copy, probs, values, depth+1)
+                    probs, values = self.model.eval(self.propnet.get_state(data_copy))
+                counterfactual_values[ix] = self.cfr(data_copy, new_reach_probabilities, next_player, moves_copy, probs, values, depth+1, next_data_num)
             else:
-                counterfactual_values[ix] = self.cfr(data_copy, new_reach_probabilities, next_player, moves_copy, probs, values, depth)
+                counterfactual_values[ix] = self.cfr(data_copy, new_reach_probabilities, next_player, moves_copy, probs, values, depth, data_num)
 
         # Value of the current game state is just counterfactual values weighted by action probabilities
-
-        node_values = strategy.dot(counterfactual_values)  # counterfactual_values.dot(strategy)
+        node_values = strategy.dot(counterfactual_values)
         for ix, action in enumerate(legal_moves):
             cf_reach_prob = self.get_counterfactual_reach_probability(reach_probabilities, active_player)
             regrets = counterfactual_values[ix][active_player] - node_values[active_player]
@@ -112,23 +100,11 @@ class CFRTrainer():
             probs, values = None, None
             if self.model:
                 probs, values = self.model.eval(self.propnet.get_state(data))
-                # probs = []
-                # for player in self.players:
-                #     probs_dict = {}
-                #     for prob, inp in zip(probs_[0], self.propnet.legal_for[player]):
-                #         probs_dict[inp.id] = prob
-                #     probs.append(probs_dict)
-            utils += self.cfr(data, np.ones(self.num_players), 0, [], probs, values, 0)
+            utils += self.cfr(data, np.ones(self.num_players), 0, [], probs, values, 0, self.propnet.data2num(data) * self.num_players)
             i += 1
             if i > num_iterations:
                 break
             # print(i)
             # if i % 10 == 0:
             #     print(i)
-        return utils
-
-    def train(self, num_iterations: int) -> int:
-        # self.train_(num_iterations//10)
-        # self.reset()
-        utils = self.train_(num_iterations) / num_iterations
         return utils

@@ -4,12 +4,14 @@ import random
 import pathlib
 import time
 import os
+import numpy as np
 
 NUM_PRE_LAYERS = 2
 MIN_PRE_SIZE = 50
 NUM_POST_LAYERS = 2
 MIN_POST_SIZE = 100
 REPLAY_SIZE = 20000
+# REPLAY_SIZE = 200
 
 tf.compat.v1.disable_eager_execution()
 
@@ -99,6 +101,7 @@ class Model:
     def add_sample(self, state, probs, scores):
         self.replay_buffer.append((state, probs, scores))
 
+    # @profile
     def eval(self, state):
         feed_dict = {self.input: [state]}
         all_qs = {}
@@ -133,8 +136,8 @@ class Model:
             }
             for role in self.roles:
                 tq, tprobs = self.target[role]
-                feed_dict[tq] = [[x[2][role]] for x in sample]
-                feed_dict[tprobs] = [x[1][role] for x in sample]
+                feed_dict[tq] = np.array([[x[2][role]] for x in sample])
+                feed_dict[tprobs] = np.array([x[1][role] for x in sample])
             start = time.time()
             _, loss = self.sess.run(
                 (self.trainer, self.loss), feed_dict=feed_dict)
