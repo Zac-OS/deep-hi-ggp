@@ -11,8 +11,7 @@ class PrintConect4:
     def reset(self):
         self.board = [[' ' for i in range(self.size)] for j in range(self.size)]
 
-
-    def print_moves(self, moves, propnet):
+    def make_moves(self, moves, propnet):
         if self.size == 0:
             return
         printing_moves = {}
@@ -20,7 +19,7 @@ class PrintConect4:
             for move in propnet.legal_for[role]:
                 if move.id in moves:
                     printing_moves[role] = move.gdl
-        print(printing_moves)
+        # print(printing_moves)
         if "oplayer" in printing_moves:
             printing_moves["o"] = printing_moves["oplayer"].replace("oplayer", "o")
             printing_moves["x"] = printing_moves["xplayer"].replace("xplayer", "x")
@@ -39,5 +38,6 @@ class PrintConect4:
             if self.board[o0][o1] == " ":
                 self.board[o0][o1] = "o"
 
+    def print_moves(self):
         for line in self.board:
             print("|".join(line))

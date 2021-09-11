@@ -61,7 +61,8 @@ def do_game(cur, propnet, model):
                 else:
                     choice -= p
 
-        game_printer.print_moves(moves, propnet)
+        game_printer.make_moves(moves, propnet)
+        game_printer.print_moves()
 
         cur = cur.get_or_make_child(tuple(moves))
         print('Play took %.4f seconds' % (time.time() - start))
