@@ -72,6 +72,8 @@ for step in range(1000):
         print(f"Computed average game value for player {player}: {utils[i] :.3f}")
 
     policy = cfr_trainer.get_root_policy_for_player(my_role, num_iterations*2)
+    assert 0.99 < sum(policy) < 1.01, (sum(policy), my_role, policy)
+
     print(f"policy = {policy}")
     # model.print_eval(propnet.get_state(cur.data))
     choice = random.random()

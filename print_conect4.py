@@ -19,7 +19,7 @@ class PrintConect4:
             for move in propnet.legal_for[role]:
                 if move.id in moves:
                     printing_moves[role] = move.gdl
-        # print(printing_moves)
+        print(printing_moves)
         if "oplayer" in printing_moves:
             printing_moves["o"] = printing_moves["oplayer"].replace("oplayer", "o")
             printing_moves["x"] = printing_moves["xplayer"].replace("xplayer", "x")
