@@ -47,8 +47,8 @@ for step in range(1000):
             taken_moves[role] = moves[0]
         elif role == "random":
             # taken_moves[role] = moves[step % len(moves)]
-            # taken_moves[role] = random.choice(moves)
-            taken_moves[role] = moves[0]
+            taken_moves[role] = random.choice(moves)
+            # taken_moves[role] = moves[0]
         elif role != my_role:
             print('Valid moves for', role)
             print(f'Valid moves for {role}: {[move.move_gdl for move in moves]}')
@@ -92,13 +92,8 @@ for step in range(1000):
     myNode.add_history((taken_moves[my_role].id, propnet.sees_ids_for(my_role, data)))
     data = data.copy()
     propnet.do_non_sees_step(data, tuple(moves))
-    # print('Moves were:')
-    # for move in propnet.legal:
-    #     if move.id in moves and move.move_gdl.strip() != 'noop':
-    #         print(move.move_role, move.move_gdl)
     game_printer.make_moves(moves, propnet)
     # game_printer.print_moves()
-    # print('Play took %.4f seconds' % (time.time() - start))
     if propnet.is_terminal(data):
         break
 game_printer.print_moves()
