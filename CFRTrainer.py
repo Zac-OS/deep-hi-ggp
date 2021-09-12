@@ -9,6 +9,7 @@ class CFRTrainer():
         self.node = node
         self.propnet = node.propnet
         self.players = self.propnet.roles
+        self.seen_states = {role: [] for role in self.players}
         self.num_players = len(self.players)
         self.state_names = {}
         self.depth = depth
@@ -22,10 +23,11 @@ class CFRTrainer():
         for n in self.infoset_map.values():
             n.strategy_sum = np.zeros(n.num_actions)
 
-    def get_information_set(self, player_state, num_actions, is_random_player, init_policy=None) -> InformationSet:
+    def get_information_set(self, player_state, num_actions, player, init_policy=None) -> InformationSet:
         """add if needed and return"""
         if player_state not in self.infoset_map:
-            self.infoset_map[player_state] = InformationSet(num_actions, is_random_player, init_policy)
+            self.seen_states[player].append(player_state)
+            self.infoset_map[player_state] = InformationSet(num_actions, player == "random", init_policy)
         return self.infoset_map[player_state]
 
     def get_counterfactual_reach_probability(self, probs: np.array, player: int):
@@ -54,9 +56,9 @@ class CFRTrainer():
         if self.model:
             probs_dict = probs[self.players[active_player]]
             probs_array = np.array([probs_dict[move.id] for move in legal_moves])
-            info_set = self.get_information_set(state_num, len(legal_moves), self.players[active_player] == "random", probs_array)
+            info_set = self.get_information_set(state_num, len(legal_moves), self.players[active_player], probs_array)
         else:
-            info_set = self.get_information_set(state_num, len(legal_moves), self.players[active_player] == "random")
+            info_set = self.get_information_set(state_num, len(legal_moves), self.players[active_player])
         self.state_names[state_num] = f"{self.players[active_player]}: {[m.gdl for m in legal_moves]}"
 
         strategy = info_set.get_strategy(reach_probabilities[active_player])
