@@ -1,4 +1,5 @@
 from imperfectNode_fast_invalids import ImperfectNode
+# from imperfectNode import ImperfectNode
 from perfectNode import PerfectNode
 from CFRTrainer_imperfect import CFRTrainerImperfect
 from print_conect4 import PrintConect4
@@ -66,6 +67,8 @@ for step in range(1000):
     while time.time() - start < 1:
         myNode.data = myNode.data.copy()
         depth += 1
+        print("depth: ", depth)
+        # cfr_trainer = CFRTrainerImperfect(myNode)
         cfr_trainer = CFRTrainerImperfect(myNode, depth, model)
         utils = cfr_trainer.train(num_iterations)
     for i, player in enumerate(cfr_trainer.players):

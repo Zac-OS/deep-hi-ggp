@@ -4,6 +4,9 @@ import random
 from informationSet import InformationSet
 from CFRTrainer import CFRTrainer
 
+# def tonum(data):
+#     return str(str(int("".join(str(int(x)) for x in data), 2)).__hash__())[:5]
+
 class CFRTrainerImperfect(CFRTrainer):
     def __init__(self, node, depth=999999999, model=None):
         super().__init__(node, depth, model)
@@ -15,10 +18,13 @@ class CFRTrainerImperfect(CFRTrainer):
             policy = np.ones(len(list(self.propnet.legal_moves_for(self.players[player_num], data))))
             return policy / policy.shape[0]
         policy = np.zeros(len(list(self.propnet.legal_moves_for(self.players[player_num], data))))
-        if num_iterations < 10:
+        if True:
+            num_states = 0
             for state in self.seen_states[player]:
-                policy += self.infoset_map[state].get_average_strategy()
-            policy /= len(self.seen_states[player])
+                if self.infoset_map[state].num_actions == policy.shape[0]:
+                    policy += self.infoset_map[state].get_average_strategy()
+                    num_states += 1
+            policy /= num_states
         else:
             i = 1
             for data in self.node.generate_posible_games():
@@ -38,5 +44,5 @@ class CFRTrainerImperfect(CFRTrainer):
         if not self.model:
             self.train_(num_iterations//10)
             self.reset()
-        utils = self.train_(num_iterations) / (num_iterations+1)
+        utils = self.train_(num_iterations) / num_iterations
         return utils

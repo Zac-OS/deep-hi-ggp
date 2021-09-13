@@ -104,7 +104,7 @@ class CFRTrainer():
                 probs, values = self.model.eval(self.propnet.get_state(data))
             utils += self.cfr(data, np.ones(self.num_players), 0, [], probs, values, 0, self.propnet.data2num(data) * self.num_players)
             i += 1
-            if i > num_iterations:
+            if i == num_iterations:
                 break
             # print(i)
             # if i % 10 == 0:

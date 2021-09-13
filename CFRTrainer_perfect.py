@@ -17,6 +17,10 @@ class CFRTrainerPerfect(CFRTrainer):
         while True:
             yield self.node.data.copy()
 
-    def train(self) -> int:
-        utils = self.train_(1) / 2
+    def train(self, num_iterations: int) -> int:
+        if not self.model:
+            self.train_(num_iterations//10)
+            self.reset()
+        # utils = self.train_(1)
+        utils = self.train_(num_iterations) / num_iterations
         return utils

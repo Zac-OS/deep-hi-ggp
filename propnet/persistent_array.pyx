@@ -42,7 +42,7 @@ cdef class PersistentArray:
         self.set(key, value)
 
     def __repr__(self):
-        return str(int("".join(str(x) for x in self.values()), 2))[:5]
+        return str(str(int("".join(str(int(x)) for x in self.values()), 2)).__hash__())[:5]
 
     cpdef values(self):
         cdef list ret = []

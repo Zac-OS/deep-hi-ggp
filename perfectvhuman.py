@@ -20,6 +20,7 @@ data, propnet = load_propnet(game)
 model = Model(propnet)
 model.load_most_recent(game)
 
+num_iterations = 20
 
 cur = PerfectNode(propnet, data.copy())
 visible = propnet.visible_dict(data)
@@ -51,8 +52,9 @@ for step in range(1000):
 
     start = time.time()
     cur.data = data.copy()
-    cfr_trainer = CFRTrainerPerfect(cur, 1, model)
-    utils = cfr_trainer.train()
+    cfr_trainer = CFRTrainerPerfect(cur)
+    # cfr_trainer = CFRTrainerPerfect(cur, 1, model)
+    utils = cfr_trainer.train(num_iterations)
     for i, player in enumerate(cfr_trainer.players):
         print(f"Computed average game value for player {player}: {utils[i] :.3f}")
 
