@@ -2,9 +2,14 @@ import numpy as np
 import itertools
 import random
 from informationSet import InformationSet
+import time
+from lru import LRU
+
+cache = LRU(2000)
+
 
 class CFRTrainer():
-    def __init__(self, node, depth=999999999, model=None):
+    def __init__(self, node, depth=999999999, model=None, max_time=999999999):
         self.infoset_map = {}
         self.node = node
         self.propnet = node.propnet
@@ -14,6 +19,7 @@ class CFRTrainer():
         self.state_names = {}
         self.depth = depth
         self.model = model
+        self.max_time = max_time
 
         # self.players = [role for role in self.propnet.roles if role != "random"]
         # self.num_players = len(self.players)
@@ -39,9 +45,10 @@ class CFRTrainer():
     #     return np.array([values[player] for player in values if player != "random"])
 
     # @profile
-    def cfr(self, data, reach_probabilities: np.array, active_player: int, moves, probs, values, depth, data_num) -> np.array:
+    def cfr(self, data: tuple, reach_probabilities: np.array, active_player: int, moves, probs, values, depth, data_num) -> np.array:
         if self.propnet.is_terminal(data):
             scores = self.propnet.scores(data)
+            # print(scores)
             return np.array([scores[player] if player != "random" else 0 for player in self.players])
 
         if depth == self.depth:
@@ -53,6 +60,7 @@ class CFRTrainer():
         assert len(legal_moves) > 0
 
         state_num = data_num + active_player
+        # if False and self.model:
         if self.model:
             probs_dict = probs[self.players[active_player]]
             probs_array = np.array([probs_dict[move.id] for move in legal_moves])
@@ -77,15 +85,26 @@ class CFRTrainer():
             moves_copy = moves.copy()
             moves_copy.append(action)
             if next_player == 0:
-                data_copy = data.copy()
-                self.propnet.do_step(data_copy, [move.input_id for move in moves_copy])
-                next_data_num = self.propnet.data2num(data_copy) * self.num_players
+                if data not in cache:
+                    cache[data] = {}
+                    # print(len(cache))
+                new_moves = tuple(moves_copy)
+                if new_moves in cache[data]:
+                    data_copy, next_data_num = cache[data][new_moves]
+                else:
+                    data_copy = list(data)
+                    # print([move.move_gdl for move in moves_copy])
+                    self.propnet.do_step(data_copy, [move.input_id for move in moves_copy])
+                    next_data_num = self.propnet.data2num(data_copy) * self.num_players
+                    data_copy = tuple(data_copy)
+                    cache[data][new_moves] = data_copy, next_data_num
                 moves_copy = []
                 if self.model:
                     probs, values = self.model.eval(self.propnet.get_state(data_copy))
                 counterfactual_values[ix] = self.cfr(data_copy, new_reach_probabilities, next_player, moves_copy, probs, values, depth+1, next_data_num)
             else:
                 counterfactual_values[ix] = self.cfr(data_copy, new_reach_probabilities, next_player, moves_copy, probs, values, depth, data_num)
+            # print(ix, action_probability, counterfactual_values[ix])
 
         # Value of the current game state is just counterfactual values weighted by action probabilities
         node_values = strategy.dot(counterfactual_values)
@@ -95,16 +114,18 @@ class CFRTrainer():
             info_set.cumulative_regrets[ix] += cf_reach_prob * regrets
         return node_values
 
+    # @profile
     def train_(self, num_iterations: int) -> int:
         utils = np.zeros(self.num_players)
         i = 0
+        start_time = time.time()
         for data in self.data_generator():
             probs, values = None, None
             if self.model:
                 probs, values = self.model.eval(self.propnet.get_state(data))
-            utils += self.cfr(data, np.ones(self.num_players), 0, [], probs, values, 0, self.propnet.data2num(data) * self.num_players)
+            utils += self.cfr(tuple(data), np.ones(self.num_players), 0, [], probs, values, 0, self.propnet.data2num(data) * self.num_players)
             i += 1
-            if i == num_iterations:
+            if i == num_iterations or time.time() - start_time > self.max_time:
                 break
             # print(i)
             # if i % 10 == 0:

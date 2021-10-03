@@ -8,8 +8,8 @@ from CFRTrainer import CFRTrainer
 #     return str(str(int("".join(str(int(x)) for x in data), 2)).__hash__())[:5]
 
 class CFRTrainerImperfect(CFRTrainer):
-    def __init__(self, node, depth=999999999, model=None):
-        super().__init__(node, depth, model)
+    def __init__(self, node, depth=999999999, model=None, max_time=30):
+        super().__init__(node, depth, model, max_time)
 
     def get_root_policy_for_player(self, player, num_iterations):
         player_num = self.players.index(player)

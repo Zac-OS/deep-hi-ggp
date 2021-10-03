@@ -6,6 +6,7 @@ import time
 import sys
 import random
 from print_conect4 import PrintConect4
+import wandb
 
 game = sys.argv[1]
 
@@ -16,6 +17,20 @@ model = Model(propnet)
 model.load_most_recent(game)
 model.save(game, 0)
 
+
+num_iterations = 6
+base_depth = 1
+
+wandb.init(
+  project="connectFour",
+  entity="zestypuffin",
+  config={
+      "base_depth": base_depth,
+      "game_type": "perfect information",
+      "num_perfect_iterations": f"{num_iterations//2 + 1} -> {num_iterations*2}",
+      "num_imperfect_iterations": f"{num_iterations//4 + 1} -> {num_iterations//2+1}",
+  })
+
 # @profile
 def do_game(cur, propnet, model):
     game_printer.reset()
@@ -23,11 +38,12 @@ def do_game(cur, propnet, model):
     states = []
     for step in range(1000):
         start = time.time()
-        depth = 0
+        depth = 1
         while time.time() - start < 0.1:
             depth += 1
             cfr_trainer = CFRTrainerPerfect(cur, depth, model)
-            utils = cfr_trainer.train()
+            utils = cfr_trainer.train(random.randint(2, 10))
+
         # print(cfr_trainer.get_root_policy_for_player("x", 0), cfr_trainer.get_root_policy_for_player("o", 0))
         # print(cfr_trainer.get_root_policy_for_player("player1", 0), cfr_trainer.get_root_policy_for_player("player2", 0))
         # model.print_eval(propnet.get_state(cur.data))
@@ -78,7 +94,9 @@ for i in range(50000):
     cur = PerfectNode(propnet, data.copy())
     print('Game number', i)
     do_game(cur, propnet, model)
-    model.train(epochs=10)
+    loss = model.train(epochs=20)
+    root_out = model.eval(propnet.get_state(data))
+    wandb.log({"loss": loss, "root policy": root_out[0], "root values": root_out[1]})
     if i and i % 50 == 0:
         model.save(game, i)
         with open(f'models/times-{game}', 'a') as f:

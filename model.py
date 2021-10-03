@@ -5,19 +5,21 @@ import pathlib
 import time
 import os
 import numpy as np
+# from functools import lru_cache
+# from methodtools import lru_cache
 
 NUM_PRE_LAYERS = 2
 MIN_PRE_SIZE = 50
 NUM_POST_LAYERS = 2
 MIN_POST_SIZE = 100
 REPLAY_SIZE = 20000
-# REPLAY_SIZE = 200
+REPLAY_SIZE = 800
 
 tf.compat.v1.disable_eager_execution()
 
 
 class Model:
-    def __init__(self, propnet):
+    def __init__(self, propnet, replay_size=REPLAY_SIZE):
         self.roles = propnet.roles
         self.legal_for = propnet.legal_for
         self.id_to_move = propnet.id_to_move
@@ -35,6 +37,7 @@ class Model:
         self.saver = tf.compat.v1.train.Saver(max_to_keep=None)
         self.eval_time = self.train_time = 0
         self.losses = []
+        self.cache = {}
 
     def create_model(self):
         dense = tf.compat.v1.layers.dense
@@ -103,6 +106,10 @@ class Model:
 
     # @profile
     def eval(self, state):
+        if type(state) is not tuple:
+            state = tuple(state)
+        if state in self.cache:
+            return self.cache[state]
         feed_dict = {self.input: [state]}
         all_qs = {}
         all_probs = {}
@@ -114,6 +121,7 @@ class Model:
             all_probs[role] = {}
             for prob, inp in zip(probs[0], self.legal_for[role]):
                 all_probs[role][inp.id] = prob
+        self.cache[state] = (all_probs, all_qs)
         return all_probs, all_qs
 
     def print_eval(self, state):
@@ -125,9 +133,12 @@ class Model:
 
     def train(self, epochs=5, batchsize=128):
         # Sample from replay buffer and train
-        if batchsize > len(self.replay_buffer):
+        if batchsize//2 > len(self.replay_buffer):
             print('Skipping as replay buffer too small')
-            return
+            return 0
+        elif batchsize > len(self.replay_buffer):
+            batchsize //= 2
+
         sum_loss = 0
         for i in range(epochs):
             sample = random.sample(self.replay_buffer, batchsize)
@@ -145,12 +156,15 @@ class Model:
             print('Loss is', loss)
             sum_loss += loss
         self.losses.append(sum_loss/epochs)
+        self.cache = {}
+        return sum_loss/epochs
 
     def save(self, game, i):
         path = os.path.join('models', game)
         pathlib.Path(path).mkdir(parents=True, exist_ok=True)
         save_path = self.saver.save(self.sess, path + '/step-%06d.ckpt' % i)
         print('Saved model to', save_path)
+        return save_path
 
     def load(self, path):
         self.saver.restore(self.sess, path)
