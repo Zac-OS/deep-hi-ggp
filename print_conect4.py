@@ -1,7 +1,7 @@
 class PrintConect4:
     def __init__(self, game):
         size = 0
-        if game == "blindtictactoe":
+        if game.startswith("blindtictactoe"):
             size = 3
         if game == "kriegTTT_5x5":
             size = 5

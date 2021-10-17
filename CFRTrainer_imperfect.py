@@ -14,6 +14,9 @@ class CFRTrainerImperfect(CFRTrainer):
     def get_root_policy_for_player(self, player, num_iterations):
         player_num = self.players.index(player)
         data = next(self.node.generate_posible_games())
+        if data is None:
+            policy = np.ones(len(list(self.propnet.legal_for[self.players[player_num]])))
+            return policy / policy.shape[0]
         if player == "random":
             policy = np.ones(len(list(self.propnet.legal_moves_for(self.players[player_num], data))))
             return policy / policy.shape[0]
@@ -24,7 +27,10 @@ class CFRTrainerImperfect(CFRTrainer):
                 if self.infoset_map[state].num_actions == policy.shape[0]:
                     policy += self.infoset_map[state].get_average_strategy()
                     num_states += 1
-            policy /= num_states
+            if num_states > 0:
+                policy /= num_states
+            else:
+                policy += 1 / policy.shape[0]
         else:
             i = 1
             for data in self.node.generate_posible_games():

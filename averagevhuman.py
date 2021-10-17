@@ -5,10 +5,17 @@ from CFRTrainer_imperfect import CFRTrainerImperfect
 from print_conect4 import PrintConect4
 import random
 from propnet import load_propnet
-from model import Model
 import time
 import numpy as np
 import sys
+
+
+use_tf = False
+if use_tf:
+    from model import Model
+else:
+    from model_pytorch import Model
+
 
 game = sys.argv[1]
 my_role = sys.argv[2]
@@ -16,14 +23,21 @@ my_role = sys.argv[2]
 print("We're playing", game)
 print('I am', my_role)
 
-num_iterations = 10
+num_iterations = 40
 
 game_printer = PrintConect4(game)
 
 data, propnet = load_propnet(game)
 model = Model(propnet)
-model.load_most_recent(game)
-
+# model.load_most_recent(game)
+model.load(f"models/{game}/step-000200.ckpt")
+state = propnet.get_state(data)
+# print(state)
+# print(propnet.data2num(data))
+# print(hash(propnet.data2num(data)))
+# print(model.eval(propnet.get_state(data)))
+# print(model.eval(propnet.get_state(data)))
+# exit()
 
 myNode = ImperfectNode(propnet, data.copy(), my_role)
 cur = PerfectNode(propnet, data.copy())
@@ -49,7 +63,7 @@ for step in range(1000):
         elif role == "random":
             # taken_moves[role] = moves[step % len(moves)]
             taken_moves[role] = random.choice(moves)
-            # taken_moves[role] = moves[0]
+            # taken_moves[role] = moves[1]
         elif role != my_role:
             print('Valid moves for', role)
             print(f'Valid moves for {role}: {[move.move_gdl for move in moves]}')
@@ -69,8 +83,11 @@ for step in range(1000):
         depth += 1
         print("depth: ", depth)
         # cfr_trainer = CFRTrainerImperfect(myNode)
-        cfr_trainer = CFRTrainerImperfect(myNode, depth, model)
+        cfr_trainer = CFRTrainerImperfect(myNode, depth, model, 500)
         utils = cfr_trainer.train(num_iterations)
+        # break
+        if depth > 5:
+            break
     for i, player in enumerate(cfr_trainer.players):
         print(f"Computed average game value for player {player}: {utils[i] :.3f}")
 
@@ -79,6 +96,7 @@ for step in range(1000):
 
     print(f"policy = {policy}")
     # model.print_eval(propnet.get_state(cur.data))
+    print(model.eval(propnet.get_state(data)))
     choice = random.random()
     for i, p in enumerate(policy):
         if choice < p:
@@ -96,7 +114,7 @@ for step in range(1000):
     data = data.copy()
     propnet.do_non_sees_step(data, tuple(moves))
     game_printer.make_moves(moves, propnet)
-    # game_printer.print_moves()
+    game_printer.print_moves()
     if propnet.is_terminal(data):
         break
 game_printer.print_moves()

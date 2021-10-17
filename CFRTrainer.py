@@ -120,6 +120,8 @@ class CFRTrainer():
         i = 0
         start_time = time.time()
         for data in self.data_generator():
+            if data is None:
+                break
             probs, values = None, None
             if self.model:
                 probs, values = self.model.eval(self.propnet.get_state(data))

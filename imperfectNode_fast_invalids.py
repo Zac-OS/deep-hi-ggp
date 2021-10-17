@@ -20,17 +20,13 @@ class ImperfectNode:
         self.history.append(round)
 
     def generate_posible_games(self):
-        """Maybe come back to add a cache between rounds
-        Not implemented yet as it might bias towards states
-        similar to previously sampled on earlier rounds.
-        Also could change to a dfs of bfs if it is taking a long time
-        in copying the data for states"""
         while True:
             x = self.generate_single_state(list(self.data.values()), 0)
             assert x != -1, "No valid set of moves"
             if x is not None:
                 yield x
 
+    #  @profile
     def generate_single_state(self, data, depth):
         if depth == len(self.history):
             return data
@@ -57,6 +53,7 @@ class ImperfectNode:
             return None
         return res
 
+    #  @profile
     def choose_move(self, legal, depth, state_num):
         if state_num in self.move_generator:
             for moves in self.move_generator[state_num]:
@@ -73,6 +70,7 @@ class ImperfectNode:
                 return moves
         return None
 
+    #  @profile
     def valid_data(self, data, moves, depth):
         self.propnet.do_sees_step(data, tuple(moves))
         visible = self.propnet.sees_ids_for(self.role, data)
