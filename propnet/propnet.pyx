@@ -68,6 +68,7 @@ cdef class Propnet:
     cdef public dict legal_for
     cdef public dict sees_for
     cdef public dict id_to_move
+    cdef public dict input_id_to_move
     cdef public dict actions
     cdef public set posts
     cdef public list legal_to_input
@@ -132,6 +133,7 @@ cdef class Propnet:
         #     self.sees_for[see.move_role].append(see)
 
         self.id_to_move = {}
+        self.input_id_to_move = {}
         for move in self.legal:
             self.id_to_move[move.id] = move
 
@@ -144,6 +146,7 @@ cdef class Propnet:
             inp = self.actions[f'(does {l.move_role} {l.move_gdl})'.replace(' ', '')]
             l.input_id = inp
             self.legal_to_input[l.id] = inp
+            self.input_id_to_move[inp] = l
 
         assert(len(self.terminal) == 1)
         self.terminal = self.terminal[0]

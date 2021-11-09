@@ -60,7 +60,7 @@ class ImperfectNode:
                 if moves not in self.invalid[state_num]:
                     return moves
 
-        moves = [[self.history[depth][0]]]
+        moves = [[self.propnet.id_to_move[self.history[depth][0]].input_id]]
         for role in self.other_roles:
             moves.append(tuple(legal[role][i].input_id for i in random.sample(range(len(legal[role])), len(legal[role]))))
         self.move_generator[state_num] = itertools.product(*moves)

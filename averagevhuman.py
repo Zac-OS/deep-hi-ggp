@@ -1,4 +1,6 @@
-from imperfectNode_fast_invalids import ImperfectNode
+# from imperfectNode_fast_valids import ImperfectNode
+from imperfectNode_Model import ImperfectNode
+# from imperfectNode_fast_invalids import ImperfectNode
 # from imperfectNode import ImperfectNode
 from perfectNode import PerfectNode
 from CFRTrainer_imperfect import CFRTrainerImperfect
@@ -8,6 +10,7 @@ from propnet import load_propnet
 import time
 import numpy as np
 import sys
+from lru import LRU
 
 
 use_tf = False
@@ -23,14 +26,14 @@ my_role = sys.argv[2]
 print("We're playing", game)
 print('I am', my_role)
 
-num_iterations = 40
+num_iterations = 80
 
 game_printer = PrintConect4(game)
 
 data, propnet = load_propnet(game)
 model = Model(propnet)
 # model.load_most_recent(game)
-model.load(f"models/{game}/step-000200.ckpt")
+model.load(f"models/{game}/step-000202.ckpt")
 state = propnet.get_state(data)
 # print(state)
 # print(propnet.data2num(data))
@@ -39,7 +42,8 @@ state = propnet.get_state(data)
 # print(model.eval(propnet.get_state(data)))
 # exit()
 
-myNode = ImperfectNode(propnet, data.copy(), my_role)
+myNode = ImperfectNode(propnet, data.copy(), my_role, model, LRU(2000))
+# myNode = ImperfectNode(propnet, data.copy(), my_role)
 cur = PerfectNode(propnet, data.copy())
 visible = propnet.visible_dict(data)
 for step in range(1000):
@@ -49,12 +53,14 @@ for step in range(1000):
         if role != "random" and role != "o":
             print(f"visible for {role}: ", [x.gdl for x in visible[role]])
 
+    # start = time.time()
     # states = set()
     # for i, state in enumerate(myNode.generate_posible_games()):
     #     states.add(int("".join(str(int(x)) for x in state), 2))
     #     if i > 100:
     #         break
     # print(f"num states: {len(states)}")
+    # print(time.time() - start)
 
     for role in propnet.roles:
         moves = legal[role]
@@ -65,7 +71,6 @@ for step in range(1000):
             taken_moves[role] = random.choice(moves)
             # taken_moves[role] = moves[1]
         elif role != my_role:
-            print('Valid moves for', role)
             print(f'Valid moves for {role}: {[move.move_gdl for move in moves]}')
             m = input('Enter move: ')
             matching = [move for move in moves if m in move.move_gdl]
@@ -76,34 +81,43 @@ for step in range(1000):
             print('Making move', matching[0].move_gdl)
             taken_moves[role] = matching[0]
 
-    start = time.time()
-    depth = 0
-    while time.time() - start < 1:
-        myNode.data = myNode.data.copy()
-        depth += 1
-        print("depth: ", depth)
-        # cfr_trainer = CFRTrainerImperfect(myNode)
-        cfr_trainer = CFRTrainerImperfect(myNode, depth, model, 500)
-        utils = cfr_trainer.train(num_iterations)
-        # break
-        if depth > 5:
-            break
-    for i, player in enumerate(cfr_trainer.players):
-        print(f"Computed average game value for player {player}: {utils[i] :.3f}")
+    if my_role not in taken_moves:
+        start = time.time()
+        depth = 1
+        while time.time() - start < 1:
+            myNode.data = myNode.data.copy()
+            depth += 1
+            print("depth: ", depth)
+            # cfr_trainer = CFRTrainerImperfect(myNode)
+            cfr_trainer = CFRTrainerImperfect(myNode, depth, model, 500)
+            utils = cfr_trainer.train(num_iterations)
+            # break
+            if depth > 5:
+                break
+        for i, player in enumerate(cfr_trainer.players):
+            print(f"Computed average game value for player {player}: {utils[i] :.3f}")
 
-    policy = cfr_trainer.get_root_policy_for_player(my_role, num_iterations*2)
-    assert 0.99 < sum(policy) < 1.01, (sum(policy), my_role, policy)
+        policy = cfr_trainer.get_root_policy_for_player(my_role, num_iterations*2, False)
+        assert 0.99 < sum(policy) < 1.01, (sum(policy), my_role, policy)
 
-    print(f"policy = {policy}")
-    # model.print_eval(propnet.get_state(cur.data))
-    print(model.eval(propnet.get_state(data)))
-    choice = random.random()
-    for i, p in enumerate(policy):
-        if choice < p:
-            taken_moves[my_role] = legal[my_role][i]
-            break
-        else:
-            choice -= p
+        print(f"policy = {policy}")
+        # model.print_eval(propnet.get_state(data))
+        out = model.eval(propnet.get_state(data))
+        print(out[1])
+        out = out[0]
+        for role in out:
+            if role != "random":
+                print(role)
+                print(out[role])
+        choice = random.random()
+        print(choice, end=" ")
+        for i, p in enumerate(policy):
+            if choice < p:
+                print(p)
+                taken_moves[my_role] = legal[my_role][i]
+                break
+            else:
+                choice -= p
 
     moves = [taken_moves[role].id for role in propnet.roles]
 
@@ -117,7 +131,7 @@ for step in range(1000):
     game_printer.print_moves()
     if propnet.is_terminal(data):
         break
-game_printer.print_moves()
+# game_printer.print_moves()
 
 print("Terminal state reaced")
 for role in propnet.roles:

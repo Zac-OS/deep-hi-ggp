@@ -18,35 +18,30 @@ REPLAY_SIZE = 3200
 class Network(nn.Module):
     def __init__(self, num_inputs, num_actions, roles, head_depth=3):
         super().__init__()
-        self.head = [nn.Linear(num_inputs, num_inputs) for _ in range(head_depth)]
-        self.val = nn.Linear(num_inputs, len(roles))
-        self.policy_head = nn.Linear(num_inputs, num_inputs)
-        self.policy = {role: nn.Linear(num_inputs, num_actions[role]) for role in roles}
-        self.max_actions = max(num_actions[role] for role in roles)
         self.dropout = nn.Dropout(p=0.2)
         self.activ = nn.ELU()
         self.sigmoid = nn.Sigmoid()
         self.softmax = nn.Softmax(-1)
+        self.head = nn.Sequential(*[
+            nn.Sequential(nn.Linear(num_inputs, num_inputs), self.activ, self.dropout)
+        for _ in range(head_depth)])
+        self.val = nn.Linear(num_inputs, len(roles))
+        self.policy_head = nn.Sequential(nn.Linear(num_inputs, num_inputs), self.activ, self.dropout)
+        self.policy = nn.Sequential(*[nn.Linear(num_inputs, num_actions[role]) for role in roles])
+        self.max_actions = max(num_actions[role] for role in roles)
 
     def forward(self, x):
-        for fc in self.head:
-            x = self.dropout(self.activ(fc(x)))
+        x = self.head(x)
 
         val = self.sigmoid(self.val(x))
-        x = self.dropout(self.activ(self.policy_head(x)))
-        # policies = [self.softmax(self.policy[role](x)) for role in self.policy]
-        # print(policies)
+        x = self.policy_head(x)
         if len(x.shape) > 1:
             policies = torch.zeros((x.shape[0], val.shape[-1], self.max_actions))
-            for i, role in enumerate(self.policy):
-                out = self.softmax(self.policy[role](x))
+            for i, policy_layer in enumerate(self.policy):
+                out = self.softmax(policy_layer(x))
                 policies[:,i, :out.shape[-1]] = out
         else:
-            policies = [self.softmax(self.policy[role](x)) for role in self.policy]
-            # policies = torch.zeros((len(val), self.max_actions))
-            # for i, role in enumerate(self.policy):
-            #     out = self.softmax(self.policy[role](x))
-            #     policies[i, :len(out)] = out
+            policies = [self.softmax(policy_layer(x)) for policy_layer in self.policy]
 
         return policies, val
 
@@ -92,6 +87,8 @@ class Model:
     def print_eval(self, state):
         probs, qs = self.eval(state)
         for role in self.roles:
+            if role == "random":
+                continue
             print('Role', role, 'expected return:', qs[role])
             for i, pr in probs[role].items():
                 print(self.id_to_move[i].move_gdl, '%.3f' % pr)
@@ -160,7 +157,6 @@ class Model:
         return save_path
 
     def load(self, path):
-        self.net = Network(self.num_inputs, self.num_actions, self.roles)
         try:
             self.net.load_state_dict(torch.load(path))
             print("Loaded", path)
