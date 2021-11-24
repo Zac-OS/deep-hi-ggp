@@ -1,4 +1,3 @@
-from perfectNode import PerfectNode
 import random
 import itertools
 

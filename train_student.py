@@ -1,4 +1,4 @@
-from imperfectNode_fast_invalids import ImperfectNode
+# from imperfectNode_fast_invalids import ImperfectNode
 # from imperfectNode_fast_valids import ImperfectNode
 from imperfectNode_Model import ImperfectNode as ImperfectNodeModel
 # from imperfectNode import ImperfectNode
@@ -9,25 +9,18 @@ from propnet import load_propnet
 import time
 import sys
 import random
-import numpy as np
 from print_conect4 import PrintConect4
 import torch
 import wandb
+from model_pytorch import Model
 from lru import LRU
 
-log_data = True
-if use_tf:
-    from model import Model
-else:
-    from model_pytorch import Model
-
-
 game = sys.argv[1]
-
-num_iterations = 60
+num_iterations = 100
 base_depth = 0
-replay_size = 3200
+replay_size = 2500
 load_model = False
+log_data = False
 
 game_printer = PrintConect4(game)
 
@@ -35,8 +28,8 @@ data, propnet = load_propnet(game)
 model = Model(propnet, replay_size)
 if load_model:
     # model.load_most_recent(game)
-    model.load(f"models/{game}/step-000106.ckpt")
-model.save(game, 0)
+    model.load(f"models/{game}/step-000200.ckpt")
+    # model.load(f"models/{game}/step-000201.ckpt")
 
 num_perfect_iterations = [num_iterations//2 + 1, num_iterations*2]
 num_imperfect_iterations = [num_iterations//2, num_iterations]
@@ -59,10 +52,10 @@ def tonum(data):
 
 def get_perfect_outputs_pytorch(propnet, cur, data, model, start):
     depth = base_depth
-    while time.time() - start < 1:
+    while time.time() - start < 0.7:
         depth += 1
         print("depth", depth)
-        cfr_trainer = CFRTrainerPerfect(cur, depth, model)
+        cfr_trainer = CFRTrainerPerfect(cur, depth, model, 8)
         utils = cfr_trainer.train(random.randint(*num_perfect_iterations))
         if depth > 6:
             break
@@ -82,7 +75,7 @@ def get_perfect_outputs_pytorch(propnet, cur, data, model, start):
 
         total = sum(probs[i])
         assert 0.99 < total < 1.01, (total, role, probs[i])
-    return probs, [utils[i] for i, role in enumerate(propnet.roles)]
+    return probs, [utils[i] for i, _ in enumerate(propnet.roles)]
 
 def get_moves_cfr(propnet, imperfectNodes, data, model, step):
     moves_dict = propnet.legal_moves_dict(data)
@@ -100,7 +93,7 @@ def get_moves_cfr(propnet, imperfectNodes, data, model, step):
     depth = base_depth
     cfr_trainers = {}
     start = time.time()
-    while time.time() - start < 0.5:
+    while time.time() - start < 0.3:
         depth += 1
         print("Depth: ", depth)
         for role, node in imperfectNodes.items():
@@ -115,7 +108,7 @@ def get_moves_cfr(propnet, imperfectNodes, data, model, step):
     for role in propnet.roles:
         if no_train(role):
             continue
-        policy = cfr_trainers[role].get_root_policy_for_player(role, num_iterations)
+        policy = cfr_trainers[role].get_root_policy_for_player(role, num_iterations, False)
         print("second", role, policy)
         policy = iter(policy)
         valid_probs[role] = []
@@ -150,7 +143,7 @@ def do_game(cur, propnet, model):
 
     data = cur.data
     states = []
-    imperfectNodes = {role: ImperfectNode(propnet, data.copy(), role) for role in propnet.roles}
+    # imperfectNodes = {role: ImperfectNode(propnet, data.copy(), role) for role in propnet.roles}
     # cache = LRU(2000)
     imperfectNodes_model = {role: ImperfectNodeModel(propnet, data.copy(), role, model, LRU(2000)) for role in propnet.roles}
     for step in range(1000):
@@ -165,9 +158,8 @@ def do_game(cur, propnet, model):
 
 
         propnet.do_sees_step(data, tuple(moves))
-        visible = propnet.visible_dict(data)
         for i, role in enumerate(propnet.roles):
-            imperfectNodes[role].add_history((moves[i], propnet.sees_ids_for(role, data)))
+            # imperfectNodes[role].add_history((moves[i], propnet.sees_ids_for(role, data)))
             imperfectNodes_model[role].add_history((moves[i], propnet.sees_ids_for(role, data)))
         propnet.do_non_sees_step(data, tuple(moves))
         game_printer.make_moves(moves, propnet)
@@ -184,19 +176,14 @@ start = time.time()
 for i in range(50000):
     cur = PerfectNode(propnet, data.copy())
     print('Game number', i)
+    do_game(cur, propnet, model)
     loss = model.train(epochs=20)
     if loss > 0:
         root_out = model.eval(propnet.get_state(data))
         if log_data:
             wandb.log({"loss": loss*35, "root policy": root_out[0], "root values": root_out[1]})
-        model.save(f"{game}", i + 3000)
 
-    do_game(cur, propnet, model)
     if i % 50 == 0:
-        # model.save(f"{game}", i//50)
-        # model.save(f"{game}_{play_using_cfr}_{use_tf}", 200)
-        # model_artifact = wandb.Artifact(game, type="model")
-        # model_artifact.add_file(f"./{model.save(game, i)}.")
-        # run.log_artifact(model_artifact, aliases=['latest', game])
+        model.save(f"{game}", i//50)
         with open(f'models/times-{game}', 'a') as f:
             f.write(f'{i} {time.time()-start}\n')

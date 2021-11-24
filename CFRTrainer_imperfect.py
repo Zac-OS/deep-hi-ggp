@@ -11,7 +11,7 @@ class CFRTrainerImperfect(CFRTrainer):
     def __init__(self, node, depth=999999999, model=None, max_time=30):
         super().__init__(node, depth, model, max_time)
 
-    def get_root_policy_for_player(self, player, num_iterations, approximate_for_traing=False):
+    def get_root_policy_for_player(self, player, num_iterations, approximate_for_traing=True):
         player_num = self.players.index(player)
         data = next(self.node.generate_posible_games())
         if data is None:
@@ -51,5 +51,5 @@ class CFRTrainerImperfect(CFRTrainer):
         if not self.model:
             self.train_(num_iterations//10)
             self.reset()
-        utils = self.train_(num_iterations) / num_iterations
+        utils = self.train_(num_iterations)
         return utils

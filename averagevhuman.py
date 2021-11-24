@@ -1,7 +1,7 @@
 # from imperfectNode_fast_valids import ImperfectNode
-from imperfectNode_Model import ImperfectNode
+# from imperfectNode_Model import ImperfectNode
 # from imperfectNode_fast_invalids import ImperfectNode
-# from imperfectNode import ImperfectNode
+from imperfectNode import ImperfectNode
 from perfectNode import PerfectNode
 from CFRTrainer_imperfect import CFRTrainerImperfect
 from print_conect4 import PrintConect4
@@ -14,10 +14,7 @@ from lru import LRU
 
 
 use_tf = False
-if use_tf:
-    from model import Model
-else:
-    from model_pytorch import Model
+from model_pytorch import Model
 
 
 game = sys.argv[1]
@@ -33,7 +30,7 @@ game_printer = PrintConect4(game)
 data, propnet = load_propnet(game)
 model = Model(propnet)
 # model.load_most_recent(game)
-model.load(f"models/{game}/step-000202.ckpt")
+model.load(f"models/{game}/step-000109.ckpt")
 state = propnet.get_state(data)
 # print(state)
 # print(propnet.data2num(data))
@@ -42,15 +39,15 @@ state = propnet.get_state(data)
 # print(model.eval(propnet.get_state(data)))
 # exit()
 
-myNode = ImperfectNode(propnet, data.copy(), my_role, model, LRU(2000))
-# myNode = ImperfectNode(propnet, data.copy(), my_role)
+# myNode = ImperfectNode(propnet, data.copy(), my_role, model, LRU(2000))
+myNode = ImperfectNode(propnet, data.copy(), my_role)
 cur = PerfectNode(propnet, data.copy())
 visible = propnet.visible_dict(data)
 for step in range(1000):
     legal = propnet.legal_moves_dict(data)
     taken_moves = {}
     for role in propnet.roles:
-        if role != "random" and role != "o":
+        if role != "random":
             print(f"visible for {role}: ", [x.gdl for x in visible[role]])
 
     # start = time.time()
@@ -83,13 +80,13 @@ for step in range(1000):
 
     if my_role not in taken_moves:
         start = time.time()
-        depth = 1
+        depth = 0
         while time.time() - start < 1:
             myNode.data = myNode.data.copy()
             depth += 1
             print("depth: ", depth)
             # cfr_trainer = CFRTrainerImperfect(myNode)
-            cfr_trainer = CFRTrainerImperfect(myNode, depth, model, 500)
+            cfr_trainer = CFRTrainerImperfect(myNode, depth, model, 2)
             utils = cfr_trainer.train(num_iterations)
             # break
             if depth > 5:
@@ -97,7 +94,8 @@ for step in range(1000):
         for i, player in enumerate(cfr_trainer.players):
             print(f"Computed average game value for player {player}: {utils[i] :.3f}")
 
-        policy = cfr_trainer.get_root_policy_for_player(my_role, num_iterations*2, False)
+        policy = cfr_trainer.get_root_policy_for_player(my_role, num_iterations*2, True)
+        # policy = cfr_trainer.get_root_policy_for_player(my_role, num_iterations*2, False)
         assert 0.99 < sum(policy) < 1.01, (sum(policy), my_role, policy)
 
         print(f"policy = {policy}")

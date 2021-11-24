@@ -5,8 +5,8 @@ from informationSet import InformationSet
 from CFRTrainer import CFRTrainer
 
 class CFRTrainerPerfect(CFRTrainer):
-    def __init__(self, node, depth=999999999, model=None):
-        super().__init__(node, depth, model)
+    def __init__(self, node, depth=999999999, model=None, max_time=999999999):
+        super().__init__(node, depth, model, max_time)
 
     def get_root_policy_for_player(self, player, num_iterations=None):
         player_num = self.players.index(player)
@@ -22,5 +22,5 @@ class CFRTrainerPerfect(CFRTrainer):
             self.train_(num_iterations//10)
             self.reset()
         # utils = self.train_(1)
-        utils = self.train_(num_iterations) / num_iterations
+        utils = self.train_(num_iterations)
         return utils

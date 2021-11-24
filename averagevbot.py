@@ -1,39 +1,36 @@
 # from imperfectNode_fast_valids import ImperfectNode
 from imperfectNode import ImperfectNode
 # from imperfectNode_Model import ImperfectNode
-from perfectNode import PerfectNode
 from CFRTrainer_imperfect import CFRTrainerImperfect
 from print_conect4 import PrintConect4
 import random
 from propnet import load_propnet
-# from model import Model
 from model_pytorch import Model
 import time
-import numpy as np
 import sys
 from lru import LRU
 
-# game = "transit"
+# game = "kriegTTT_5x5"
 game = "blindtictactoe"
 my_role = sys.argv[1]
 
-num_iterations = 80
+num_iterations = 110
 
 game_printer = PrintConect4(game)
 
 data_base, propnet = load_propnet(game)
 model = Model(propnet)
 # model.load_most_recent(game)
-# model.load(f"models/{game}/step-000981.ckpt")
-model.load(f"models/{game}/step-003643.ckpt")
+# model.load(f"models/{game}/step-000047.ckpt")
+model.load(f"models/{game}/step-000148.ckpt")
+# model.load(f"models/{game}/step-000202.ckpt")
 
-lru_cache = LRU(2000)
+state_cache = {}
 
 def run_game(i):
     data = data_base.copy()
     myNode = ImperfectNode(propnet, data.copy(), my_role)
-    # myNode = ImperfectNode(propnet, data.copy(), my_role, model, lru_cache)
-    cur = PerfectNode(propnet, data.copy())
+    # myNode = ImperfectNode(propnet, data.copy(), my_role, model, LRU(2000))
     visible = propnet.visible_dict(data)
 
     selected_corners = []
@@ -137,21 +134,26 @@ def run_game(i):
                 taken_moves[role] = random.choice(moves)
 
         if my_role not in taken_moves:
-            start = time.time()
-            depth = 0
-            while time.time() - start < 1:
-                myNode.data = myNode.data.copy()
-                depth += 1
-                print("depth: ", depth)
-                # cfr_trainer = CFRTrainerImperfect(myNode)
-                cfr_trainer = CFRTrainerImperfect(myNode, depth, model)
-                utils = cfr_trainer.train(num_iterations)
-                # break
+            data_num = propnet.data2num(data)
+            if data_num in state_cache:
+                policy = state_cache[data_num]
+            else:
+                start = time.time()
+                depth = 1 if step < 2 else 0
+                while time.time() - start < 1:
+                    myNode.data = myNode.data.copy()
+                    depth += 1
+                    print("depth: ", depth)
+                    # cfr_trainer = CFRTrainerImperfect(myNode)
+                    cfr_trainer = CFRTrainerImperfect(myNode, depth, model)
+                    utils = cfr_trainer.train(num_iterations)
+                    # break
 
-            for i, player in enumerate(cfr_trainer.players):
-                print(f"Computed average game value for player {player}: {utils[i] :.3f}")
+                for i, player in enumerate(cfr_trainer.players):
+                    print(f"Computed average game value for player {player}: {utils[i] :.3f}")
 
-            policy = cfr_trainer.get_root_policy_for_player(my_role, num_iterations, False)
+                policy = cfr_trainer.get_root_policy_for_player(my_role, num_iterations, False)
+                state_cache[data_num] = policy
             assert 0.99 < sum(policy) < 1.01, (sum(policy), my_role, policy)
 
             print(f"policy = {policy}")

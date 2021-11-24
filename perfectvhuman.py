@@ -52,8 +52,8 @@ for step in range(1000):
 
     start = time.time()
     cur.data = data.copy()
-    cfr_trainer = CFRTrainerPerfect(cur)
-    # cfr_trainer = CFRTrainerPerfect(cur, 1, model)
+    # cfr_trainer = CFRTrainerPerfect(cur)
+    cfr_trainer = CFRTrainerPerfect(cur, 2, model)
     utils = cfr_trainer.train(num_iterations)
     for i, player in enumerate(cfr_trainer.players):
         print(f"Computed average game value for player {player}: {utils[i] :.3f}")

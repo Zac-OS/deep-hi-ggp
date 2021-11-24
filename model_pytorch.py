@@ -96,11 +96,11 @@ class Model:
 
     def train(self, epochs=5, batchsize=128):
         # Sample from replay buffer and train
-        if batchsize//2 > len(self.replay_buffer):
+        if batchsize > len(self.replay_buffer):
             print('Skipping as replay buffer too small')
             return 0
-        elif batchsize > len(self.replay_buffer):
-            batchsize //= 2
+        # elif batchsize > len(self.replay_buffer):
+        #     batchsize //= 2
 
         self.net.train()
         self.cache = {}

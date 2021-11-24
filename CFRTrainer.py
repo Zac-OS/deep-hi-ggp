@@ -132,4 +132,4 @@ class CFRTrainer():
             # print(i)
             # if i % 10 == 0:
             #     print(i)
-        return utils
+        return utils / i

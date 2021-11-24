@@ -108,7 +108,7 @@ class ImperfectNode:
             for moves in self.move_generator[state_num]:
                 if moves not in self.invalid[state_num]:
                     return moves
-            print("empty path")
+            # print("empty path")
             return None
 
         moves = {}
@@ -118,9 +118,11 @@ class ImperfectNode:
             self.move_generator[state_num] = self.cache[state_num]
         else:
             out = self.model.eval(self.propnet.get_state(data))[0]
+            new_out = {}
             for role in out:
-                out[role] = {self.propnet.id_to_move[key].input_id: val for key, val in out[role].items()}
-            self.move_generator[state_num] = Node(out, moves, self.propnet.id_to_move[self.history[depth][0]].input_id)
+                new_out[role] = {self.propnet.id_to_move[key].input_id: val for key, val in out[role].items()}
+                # out[role] = {self.propnet.id_to_move[key].input_id: val for key, val in out[role].items()}
+            self.move_generator[state_num] = Node(new_out, moves, self.propnet.id_to_move[self.history[depth][0]].input_id)
             self.cache[state_num] = self.move_generator[state_num]
 
         for moves in self.move_generator[state_num]:

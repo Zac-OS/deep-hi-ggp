@@ -8,9 +8,6 @@ import itertools
 
 class Node:
     def __init__(self, legal, moves, other_roles, prob):
-        # print("starting with", prob, moves)
-
-        # self.children = []
         self.prob = prob
 
         if legal is None:
@@ -30,10 +27,8 @@ class Node:
         self.move_generator = iter(self.moves)
         self.num_children = len(self.moves)
 
-
     def update_prob(self):
         assert self.finished
-        # print("updating", self.prob, self.child_nodes)
         prob = 0
         new_child_nodes = [None] * self.num_children
         new_child_moves = [None] * self.num_children
@@ -69,7 +64,6 @@ class Node:
                 return self.child_moves[i]
             prob -= p
         return None
-        assert False, "sum of child probs is less than 1"
 
 
 class ImperfectNode:
@@ -95,10 +89,6 @@ class ImperfectNode:
     def generate_single_state(self, data, depth, parentNode=None):
         state_num = self.propnet.data2num(data)
         if state_num not in self.nodes:
-            # assert parentNode is None
-            # print(state_num.__hash__(), depth, parentNode)
-            # if parentNode is not None:
-            #     exit()
             if depth == len(self.history):
                 self.nodes[state_num] = Node(None, None, self.other_roles, parentNode.prob/parentNode.num_children if parentNode else 1)
             else:
@@ -107,10 +97,6 @@ class ImperfectNode:
                 parentNode.child_nodes.append(self.nodes[state_num])
 
         if depth == len(self.history):
-            # print(self.data2num(data).__hash__())
-            # if parentNode and state_num not in self.leaf_nodes:
-            #     self.leaf_nodes[state_num] = Node(None, None, None, parentNode.prob/parentNode.num_children)
-            #     parentNode.child_nodes.append(self.leaf_nodes[state_num])
             return data
 
         node = self.nodes[state_num]
@@ -133,9 +119,6 @@ class ImperfectNode:
         if res == -1:
             return None
         node.child_moves.append(moves)
-        # x = Node(self.propnet.legal_moves_dict(data), [[self.history[depth+1][0]]], self.other_roles, self.nodes[state_num].prob/self.nodes[state_num].num_children)
-        # self.nodes[state_num].child_nodes.append(x)
-        # self.nodes[self.data2num(data)] = x
         return res
 
     def choose_move(self, state_num):
@@ -143,14 +126,6 @@ class ImperfectNode:
 
         for moves in node.move_generator:
             return moves
-
-
-        # node.move_generator = iter(node.moves)
-        # for moves in node.move_generator:
-        #     return moves
-
-
-
 
         assert not node.finished, "finished generator a second time"
         node.finished = True
@@ -163,7 +138,6 @@ class ImperfectNode:
             return moves
 
         assert False, "umm shouldn't be here i think"
-        return None
 
     def valid_data(self, data, moves, depth):
         visible = self.propnet.sees_ids_for(self.role, data)
